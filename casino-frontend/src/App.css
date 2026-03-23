@@ -1,0 +1,73 @@
+/* TU PISZEMY WYGLAD NP. STOLU*/
+
+/* Kontener główny aplikacji */
+.App {
+  padding: 20px;
+}
+
+/* Nowoczesne przyciski i liczniki */
+.counter {
+  background: var(--bg-card);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: bold;
+  box-shadow: 0 0 15px var(--accent-glow);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.counter:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 25px var(--accent);
+  background: var(--accent);
+  color: white;
+}
+
+/* Sekcja z listą gier (np. na stronie Home) */
+#next-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 25px;
+  margin-top: 50px;
+  border: none;
+}
+
+#next-steps > div {
+  background: var(--bg-card);
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  padding: 40px;
+  transition: transform 0.3s ease, border-color 0.3s ease;
+  backdrop-filter: blur(5px);
+}
+
+#next-steps > div:hover {
+  transform: scale(1.03);
+  border-color: var(--accent);
+}
+
+/* Efekt "Hero" - góra strony */
+.hero {
+  text-align: center;
+  padding: 60px 0;
+  animation: fadeIn 1s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Linki w nawigacji */
+nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 40px;
+  background: rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 30px;
+}

@@ -1,0 +1,45 @@
+:root {
+  /* Nowoczesna paleta Dark Gaming */
+  --bg-body: #0b0c10;
+  --bg-card: rgba(31, 32, 40, 0.7);
+  --text-main: #c5c6c7;
+  --text-highlight: #ffffff;
+  --accent: #aa3bff; /* Neonowy fiolet */
+  --accent-glow: rgba(170, 59, 255, 0.4);
+  --border: rgba(255, 255, 255, 0.1);
+  --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--bg-body);
+  color: var(--text-main);
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: radial-gradient(circle at top right, #1a1b26, #0b0c10);
+  background-attachment: fixed;
+}
+
+#root {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+h1, h2 {
+  color: var(--text-highlight);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+h1 {
+  font-size: 3.5rem;
+  background: linear-gradient(to bottom, #fff 30%, var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 10px var(--accent-glow));
+}
