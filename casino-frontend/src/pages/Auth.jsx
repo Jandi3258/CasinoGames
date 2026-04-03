@@ -7,17 +7,26 @@ export default function Auth({ setLoggedUser }) {
     const handleSubmit = async (e) => {
         e.preventDefault();
         const endpoint = isLogin ? 'login' : 'register';
-        const res = await fetch(`http://localhost:5000/api/${endpoint}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(form)
-        });
-        const data = await res.json();
-        if (res.ok) {
-            setLoggedUser(data.user);
-            localStorage.setItem('user', JSON.stringify(data.user)); // Zapisujemy sesję
-        } else {
-            alert(data.message);
+
+        try {
+            const res = await fetch(`http://localhost:8080/api/${endpoint}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(form)
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                setLoggedUser(data.user);
+                localStorage.setItem('user', JSON.stringify(data.user));
+            } else {
+                alert(data.message); // Błędy z serwera (np. złe hasło)
+            }
+        } catch (error) {
+            // Ten blok wykona się, gdy port 8080 jest zamknięty
+            console.error("Błąd połączenia:", error);
+            alert("Nie można połączyć się z serwerem. Upewnij się, że backend na porcie 8080 jest uruchomiony!");
         }
     };
 

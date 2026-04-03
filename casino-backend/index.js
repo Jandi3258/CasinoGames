@@ -82,5 +82,5 @@ app.get('/api/games', (req, res) => {
     ]);
 });
 
-const PORT = 5000;
+const PORT = 8080;
 app.listen(PORT, () => console.log(`🚀 Backend działa na http://localhost:${PORT}`));
