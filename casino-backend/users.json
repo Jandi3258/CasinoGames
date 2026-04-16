@@ -3,5 +3,25 @@
     "username": "test",
     "password": "123",
     "points": 457
+  },
+  {
+    "username": "jandi",
+    "password": "haslo",
+    "points": 1000
+  },
+  {
+    "username": "nowyUzytkownik",
+    "password": "nowy",
+    "points": 1150
+  },
+  {
+    "username": "rejestracja",
+    "password": "rejestracja",
+    "points": 1900
+  },
+  {
+    "username": "TyrtumPyrtum",
+    "password": "tyrtum",
+    "points": 2000
   }
 ]
