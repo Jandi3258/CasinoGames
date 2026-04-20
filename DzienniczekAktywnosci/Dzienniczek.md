@@ -1,0 +1,1 @@
+![Dyktator](images.jpeg)
