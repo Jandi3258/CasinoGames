@@ -5,6 +5,7 @@ const Navbar = ({ user, onLogout }) => (
     <nav style={{ background: '#000', padding: '15px', color: 'gold', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
 
         <Link to="/" style={{ color: 'gold', textDecoration: 'none', fontWeight: 'bold' }}>🏠 Home</Link>
+        <Link to="/payment" style={{ color: 'gold', textDecoration: 'none', marginLeft: '15px' }}>💳 Płatności</Link>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
             {/* Wyświetlamy dynamicznie nazwę i punkty konkretnego gracza */}

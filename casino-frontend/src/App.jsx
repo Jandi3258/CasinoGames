@@ -8,10 +8,13 @@ import Ruletka from './pages/Ruletka';
 import Blackjack from './pages/Blackjack';
 import Slots from './pages/Slots';
 import Auth from './pages/Auth';
+import Payment from './pages/Payment';
 
 function App() {
+    console.log('App component rendering');
     const [loggedUser, setLoggedUser] = useState(() => {
         const savedUser = localStorage.getItem('user');
+        console.log('Loaded user from localStorage:', savedUser);
         return savedUser ? JSON.parse(savedUser) : null;
     });
 
@@ -23,7 +26,7 @@ function App() {
     // Metoda dodaje określoną liczbę punktów (moze być ujemna)
     // Przykład użycia w Ruletka.jsx
     const updatePoints = async (amount) => {
-        const res = await fetch('http://localhost:5000/api/update-points', {
+        const res = await fetch('http://localhost:8080/api/update-points', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username: loggedUser.username, amount })
@@ -44,7 +47,7 @@ function App() {
     // Jeśli JEST zalogowany, pokazujemy całe kasyno
     return (
         <Router>
-            <div className="App">
+            <div className="App" style={{ background: 'black', color: 'white', minHeight: '100vh' }}>
                 {/* Przekazujemy dane użytkownika do Navbar, żeby mógł wyświetlić punkty */}
                 <Navbar user={loggedUser} onLogout={handleLogout} />
                 <main id="center">
@@ -53,6 +56,7 @@ function App() {
                         <Route path="/ruletka" element={<Ruletka user={loggedUser} updatePoints={updatePoints}/>} />
                         <Route path="/blackjack" element={<Blackjack user={loggedUser} updatePoints={updatePoints}/>} />
                         <Route path="/slots" element={<Slots user={loggedUser} updatePoints={updatePoints}/>} />
+                        <Route path="/payment" element={<Payment user={loggedUser} updatePoints={updatePoints}/>} />
                         {/* Przekierowanie, jeśli ktoś wejdzie na nieistniejącą stronę */}
                         <Route path="*" element={<Navigate to="/" />} />
                     </Routes>

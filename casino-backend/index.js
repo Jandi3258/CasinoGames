@@ -69,6 +69,31 @@ app.post('/api/update-points', (req, res) => {
     }
 });
 
+app.post("/api/deposit", (req, res) => {
+    const { username, packageId } = req.body;
+    const users = readUsers();
+    const userIndex = users.findIndex(u => u.username === username);
+
+    if (userIndex === -1) {
+        return res.status(404).json({ message: "Uzytkownik nie znaleziony" });
+    }
+
+    const packages = {
+        small: { points: 100, cost: 10 },
+        medium: { points: 500, cost: 50 },
+        large: { points: 1000, cost: 100 }
+    };
+
+    if (!packages[packageId]) {
+        return res.status(400).json({ message: "Nieprawidlowy pakiet" });
+    }
+
+    users[userIndex].points += packages[packageId].points;
+    writeUsers(users);
+
+    res.json({ success: true, newPoints: users[userIndex].points, message: "Dodano " + packages[packageId].points + " punktow" });
+});
+
 // Prosta informacja, że kasyno działa
 app.get('/', (req, res) => {
     res.send('🎰 Witamy w serwerze Kasyna! Logika działa.');
