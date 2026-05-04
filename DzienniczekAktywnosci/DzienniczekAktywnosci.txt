@@ -1,2 +1,11 @@
 Rozliczanie chłopaków:
-20-27 kwietnia
+20 kwietnia - 4 maj
+Milosz blackjack prawie skończony
+Paweł UI naprawione sloty prawie skończone 
+Bartek rozmowy
+4 maj - 11 maja 
+Milosz implementacja do naszego UI blackjacka
+Bartek napisanie ruletkę i Baze danych i szyfrowanie 
+Paweł naprawiam rolete, zaczynam przerzucać superfarmera i upiększam UI (dopasowanie do rozmiaru komputera) wszystkie wybory gry w ui jeden wybór jeden wiersz i jakiś tekst zachęcający, zdjęcie w tle
+Filip (Gruby) rozpoczęcie pisania obstawiania konii 
+Termin spotkania: 21:00 niedziela 10.05.2026
