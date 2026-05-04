@@ -137,8 +137,6 @@ const Slots = ({ user, updatePoints }) => {
         const newReels = reels.map(() => symbols[Math.floor(Math.random() * symbols.length)]);
         setReels(newReels);
 
-        // Sprawdzenie wygranej - najpierw ustawiamy wynik, potem komunikat
-        // Nowy fragment z mnożnikami *8 i *2:
     if (newReels[0] === newReels[1] && newReels[1] === newReels[2]) {
         const wygrana = bet * 8; // Mnożnik *8
         setKomunikat(`🎉 JACKPOT! Wygrałeś ${wygrana} pkt!`);
@@ -200,3 +198,5 @@ const Slots = ({ user, updatePoints }) => {
 };
 
 export default Slots;
+
+// To do : kazdy symbol inna wartosc, np. 7 daje wiecej niz wisienka, a diament najwiecej.
