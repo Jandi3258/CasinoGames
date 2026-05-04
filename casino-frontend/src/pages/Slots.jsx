@@ -138,13 +138,16 @@ const Slots = ({ user, updatePoints }) => {
         setReels(newReels);
 
         // Sprawdzenie wygranej - najpierw ustawiamy wynik, potem komunikat
-        if (newReels[0] === newReels[1] && newReels[1] === newReels[2]) {
-          setKomunikat('🎉 JACKPOT! Wygrałeś 200 pkt!');
-          updatePoints(200);
-        } else if (newReels[0] === newReels[1] || newReels[1] === newReels[2]) {
-          setKomunikat('✨ Wygrana! Wygrałeś 50 pkt!');
-          updatePoints(50);
-        } else {
+        // Nowy fragment z mnożnikami *8 i *2:
+    if (newReels[0] === newReels[1] && newReels[1] === newReels[2]) {
+        const wygrana = bet * 8; // Mnożnik *8
+        setKomunikat(`🎉 JACKPOT! Wygrałeś ${wygrana} pkt!`);
+        updatePoints(wygrana);
+    } else if (newReels[0] === newReels[1] || newReels[1] === newReels[2] || newReels[0] === newReels[2]) {
+        const wygrana = bet * 2; // Mnożnik *2
+        setKomunikat(`✨ Wygrana! Wygrałeś ${wygrana} pkt!`);
+        updatePoints(wygrana);
+    } else {
           setKomunikat('Nie tym razem. Spróbuj jeszcze raz!');
         }
 
