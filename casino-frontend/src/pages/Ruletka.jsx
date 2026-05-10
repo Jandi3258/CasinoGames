@@ -1,154 +1,234 @@
 import React, { useState } from 'react';
 
+// Oficjalna sekwencja numerów na kole europejskim
+const W = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
+const NUM_SEGMENTS = 37;
+const DEGREES_PER_SEGMENT = 360 / NUM_SEGMENTS;
+
+const redNumbers = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
+const blackNumbers = [2, 4, 6, 8, 10, 11, 13, 15, 17, 20, 22, 24, 26, 28, 29, 31, 33, 35];
+
 const Ruletka = ({ user, updatePoints }) => {
+    // STANY GRY
     const [wynik, setWynik] = useState(null);
-    const [bet, setBet] = useState(10);
-    const [komunikat, setKomunikat] = useState('');
+    const [betAmount, setBetAmount] = useState(10);
+    const [isSpinning, setIsSpinning] = useState(false);
+    const [komunikat, setKomunikat] = useState('Wybierz typ zakładu i kręć!');
+    const [wheelRotation, setWheelRotation] = useState(0);
 
-    const styles = {
-        container: {
-            padding: '60px 30px',
+    // STANY ZAKŁADU
+    const [betType, setBetType] = useState('color'); // 'color' lub 'number'
+    const [selectedColor, setSelectedColor] = useState(null);
+    const [selectedNumber, setSelectedNumber] = useState(''); // Domyślnie puste
 
-            minHeight: '100vh',
-            background: 'radial-gradient(circle at top right, #2a1f4d 0%, #0a0f1e 50%, #000 100%)',
-            color: 'white'
-        },
-        header: {
-            maxWidth: '800px',
-            margin: '0 auto 50px',
-            textAlign: 'center'
-        },
-        title: {
-            fontSize: '2.5rem',
-            fontWeight: '900',
-            marginBottom: '20px',
-            background: 'linear-gradient(135deg, #ffb347, #ffcc33)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text'
-        },
-        card: {
-            maxWidth: '600px',
-            margin: '0 auto',
-            padding: '40px',
-            borderRadius: '20px',
-            background: 'rgba(40, 45, 70, 0.4)',
-            border: '2px solid rgba(255, 179, 71, 0.3)',
-            backdropFilter: 'blur(10px)',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.3)'
-        },
-        balance: {
-            fontSize: '1.3rem',
-            fontWeight: '600',
-            marginBottom: '30px',
-            color: '#ffcc33'
-        },
-        inputGroup: {
-            marginBottom: '20px'
-        },
-        label: {
-            display: 'block',
-            marginBottom: '8px',
-            fontSize: '1rem',
-            fontWeight: '600',
-            color: '#ddd'
-        },
-        input: {
-            width: '100%',
-            padding: '12px 16px',
-            borderRadius: '12px',
-            border: '1px solid rgba(255, 179, 71, 0.3)',
-            background: 'rgba(255,255,255,0.05)',
-            color: 'white',
-            fontSize: '1rem',
-            boxSizing: 'border-box'
-        },
-        button: {
-            width: '100%',
-            padding: '14px 20px',
-            borderRadius: '14px',
-            border: 'none',
-            background: 'linear-gradient(135deg, #ffb347, #ffcc33)',
-            color: '#111',
-            fontWeight: '700',
-            fontSize: '1.1rem',
-            cursor: 'pointer',
-            transition: 'transform 0.2s ease'
-        },
-        result: {
-            marginTop: '30px',
-            padding: '20px',
-            borderRadius: '14px',
-            background: 'rgba(255, 179, 71, 0.1)',
-            border: '2px solid rgba(255, 179, 71, 0.5)',
-            fontSize: '2rem',
-            textAlign: 'center',
-            fontWeight: '700',
-            color: '#ffcc33'
-        },
-        message: {
-            marginTop: '20px',
-            padding: '18px',
-            borderRadius: '14px',
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255, 179, 71, 0.25)',
-            color: '#f5f5f5',
-            fontSize: '1rem',
-            lineHeight: '1.5',
-            minHeight: '60px'
-        }
+    // LOGIKA POMOCNICZA
+    const getNumberColor = (num) => {
+        if (num === 0) return 'green';
+        if (redNumbers.includes(num)) return 'red';
+        if (blackNumbers.includes(num)) return 'black';
+        return 'gray';
     };
 
-    const losuj = async () => {
-        if (!bet || bet <= 0) {
-            setWynik(null);
-            setKomunikat('Podaj poprawną stawkę większą niż 0 pkt.');
+    // Dynamiczny gradient dopasowany do tablicy W
+    const generatedGradient = W.map((num, i) => {
+        const color = getNumberColor(num);
+        const hex = color === 'green' ? '#0a0' : color === 'red' ? '#d00' : '#111';
+        return `${hex} ${i * DEGREES_PER_SEGMENT}deg ${(i + 1) * DEGREES_PER_SEGMENT}deg`;
+    }).join(', ');
+
+    // OBSŁUGA WYBORU ZAKŁADU
+    const selectColorBet = (color) => {
+        if (isSpinning) return;
+        setBetType('color');
+        setSelectedColor(color);
+        setSelectedNumber(''); // Czyścimy numer przy wyborze koloru
+        setKomunikat(`Obstawiono kolor: ${color === 'red' ? 'Czerwony' : color === 'black' ? 'Czarny' : 'Zielony'}`);
+    };
+
+    const selectNumberBet = (val) => {
+        if (isSpinning) return;
+        setBetType('number');
+        setSelectedColor(null); // Czyścimy kolor przy wyborze numeru
+        setSelectedNumber(val);
+        setKomunikat(`Obstawiono numer: ${val}`);
+    };
+
+    // GŁÓWNA FUNKCJA LOSUJĄCA
+    const spin = async () => {
+        if (isSpinning) return;
+
+        // WALIDACJA
+        const numToBet = parseInt(selectedNumber);
+        if (betType === 'number' && (selectedNumber === '' || isNaN(numToBet) || numToBet < 0 || numToBet > 36)) {
+            setKomunikat('❌ Wpisz poprawny numer (0-36)!');
+            return;
+        }
+        if (betType === 'color' && !selectedColor) {
+            setKomunikat('❌ Wybierz kolor zakładu!');
+            return;
+        }
+        if (isNaN(betAmount) || betAmount < 10) {
+            setKomunikat('❌ Minimalna stawka to 10 pkt!');
+            return;
+        }
+        if (user.points < betAmount) {
+            setKomunikat('❌ Za mało punktów!');
             return;
         }
 
-        if (user.points < bet) {
-            setWynik(null);
-            setKomunikat(`Nie masz wystarczającej liczby punktów. Masz ${user.points} pkt.`);
-            return;
-        }
+        setIsSpinning(true);
+        setKomunikat('🎰 Losowanie w toku...');
+        await updatePoints(-betAmount);
 
-        const liczba = Math.floor(Math.random() * 37);
-        setWynik(liczba);
+        // OBLICZANIE WYNIKU I ROTACJI
+        const randomIndex = Math.floor(Math.random() * NUM_SEGMENTS);
+        const winningNum = W[randomIndex];
 
-        if (liczba === 7) {
-            setKomunikat('🎉 JACKPOT! Wypadło 7 i wygrałeś 100 pkt!');
-            await updatePoints(-bet);
-            await updatePoints(100);
-        } else {
-            setKomunikat(`Wypadło ${liczba}. Przegrałeś stawkę ${bet} pkt. Spróbuj jeszcze raz!`);
-            await updatePoints(-bet);
-        }
+        // Celujemy w środek segmentu
+        const targetAngle = (randomIndex * DEGREES_PER_SEGMENT) + (DEGREES_PER_SEGMENT / 2);
+        const currentRotationNormalized = wheelRotation % 360;
+        const spins = 360 * 10;
+        const finalRotation = wheelRotation - spins - (targetAngle + currentRotationNormalized);
+
+        setWheelRotation(finalRotation);
+
+        // OCZEKIWANIE NA ZAKOŃCZENIE ANIMACJI
+        setTimeout(async () => {
+            setIsSpinning(false);
+            setWynik(winningNum); // Wyświetlenie wyniku w środku
+            const colorWin = getNumberColor(winningNum);
+
+            let won = false;
+            let payout = 0;
+
+            if (betType === 'color' && selectedColor === colorWin) {
+                won = true;
+                payout = betAmount * (selectedColor === 'green' ? 36 : 2);
+            } else if (betType === 'number' && parseInt(selectedNumber) === winningNum) {
+                won = true;
+                payout = betAmount * 36;
+            }
+
+            if (won) {
+                setKomunikat(`🎉 WYGRANA! Wypadło ${winningNum}. +${payout} pkt!`);
+                await updatePoints(payout);
+            } else {
+                setKomunikat(`💀 Przegrana. Wypadło ${winningNum}. Spróbuj jeszcze raz!`);
+            }
+        }, 4000);
+    };
+
+    // STYLE INLINE
+    const styles = {
+        container: { padding: '20px', textAlign: 'center', color: 'white', background: '#0a0f1e', minHeight: '100vh',
+            fontFamily: 'Arial, sans-serif' },
+
+        stage: { position: 'relative', width: '320px', height: '320px', margin: '30px auto', borderRadius: '50%',
+            border: '10px solid #d4af37', boxShadow: '0 0 50px rgba(0,0,0,0.8)' },
+
+        indicator: { position: 'absolute', top: '-15px', left: '50%', transform: 'translateX(-50%)', width: 0,
+            height: 0, borderLeft: '15px solid transparent', borderRight: '15px solid transparent',
+            borderTop: '30px solid gold', zIndex: 100 },
+
+        wheel: { width: '100%', height: '100%', position: 'relative', borderRadius: '50%',
+            transition: 'transform 4s cubic-bezier(0.1, 0.7, 0.1, 1)', transform: `rotate(${wheelRotation}deg)`,
+            background: `conic-gradient(${generatedGradient})` },
+
+        center: { position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '80px',
+            height: '80px', background: '#111', borderRadius: '50%', border: '4px solid gold', zIndex: 10,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', fontWeight: 'bold', color: 'gold' },
+
+        numberWrapper: (i) => ({
+            position: 'absolute', top: '50%', left: '50%', height: '145px', transformOrigin: 'bottom center',
+            transform: `translate(-50%, -100%) rotate(${i * DEGREES_PER_SEGMENT + DEGREES_PER_SEGMENT / 2}deg)`,
+            paddingTop: '5px', fontSize: '0.85rem', fontWeight: 'bold', color: 'white', pointerEvents: 'none'
+        }),
+        controls: { maxWidth: '500px', margin: '0 auto', padding: '20px', background: 'rgba(255,255,255,0.05)',
+            borderRadius: '15px', border: '1px solid rgba(255,215,0,0.2)' },
+        activeBetPanel: { background: 'rgba(0,0,0,0.4)', padding: '12px', borderRadius: '10px', marginBottom: '20px',
+            border: '1px solid #444', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' },
+        input: { padding: '10px', background: '#111', color: 'white', border: '1px solid #444', borderRadius: '8px',
+            width: '70px', textAlign: 'center', fontSize: '1rem' }
     };
 
     return (
         <div style={styles.container}>
-            <div style={styles.header}>
-                <h2 style={styles.title}>🎡 Ruletka</h2>
-            </div>
-            <div style={styles.card}>
-                <p style={styles.balance}>💰 Saldo: {user.points} pkt</p>
+            <h2 style={{ letterSpacing: '2px', textTransform: 'uppercase' }}>🎡 Ruletka</h2>
+            <p style={{ color: 'gold', fontSize: '1.2rem' }}>💰 Saldo: {user.points} pkt</p>
 
-                <div style={styles.inputGroup}>
-                    <label style={styles.label}>Stawka (pkt):</label>
+            {/* KOŁO RULETKI */}
+            <div style={styles.stage}>
+                <div style={styles.indicator}></div>
+                <div style={styles.center}>{isSpinning ? '?' : (wynik !== null ? wynik : '—')}</div>
+                <div style={styles.wheel}>
+                    {W.map((num, i) => (
+                        <div key={i} style={styles.numberWrapper(i)}>{num}</div>
+                    ))}
+                </div>
+            </div>
+
+            {/* PANEL STEROWANIA */}
+            <div style={styles.controls}>
+                {/* PRZYCISKI KOLORÓW */}
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
+                    <button onClick={() => selectColorBet('red')} style={{
+                        flex: 1, padding: '12px', background: '#d00', color: 'white', borderRadius: '8px',
+                        cursor: 'pointer', fontWeight: 'bold', border: selectedColor === 'red' &&
+                        betType === 'color' ? '3px solid gold' : 'none'
+                    }}>Czerwone</button>
+                    <button onClick={() => selectColorBet('black')} style={{
+                        flex: 1, padding: '12px', background: '#111', color: 'white', borderRadius: '8px',
+                        cursor: 'pointer', fontWeight: 'bold', border: selectedColor === 'black' &&
+                        betType === 'color' ? '3px solid gold' : 'none'
+                    }}>Czarne</button>
+                    <button onClick={() => selectColorBet('green')} style={{
+                        flex: 1, padding: '12px', background: '#0a0', color: 'white', borderRadius: '8px',
+                        cursor: 'pointer', fontWeight: 'bold', border: selectedColor === 'green' &&
+                        betType === 'color' ? '3px solid gold' : 'none'
+                    }}>Zielone</button>
+                </div>
+
+                {/* OBSTAWIANIE NUMERU */}
+                <div style={{ marginBottom: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                    <span>Postaw na numer (0-36):</span>
                     <input
-                        style={styles.input}
-                        type="number"
-                        value={bet}
-                        onChange={(e) => setBet(Number(e.target.value))}
+                        type="number" min="0" max="36" placeholder="?"
+                        value={selectedNumber}
+                        onChange={(e) => selectNumberBet(e.target.value)}
+                        onFocus={(e) => e.target.select()} // Auto-zaznaczanie
+                        style={{
+                            ...styles.input,
+                            borderColor: betType === 'number' ? 'gold' : '#444',
+                            boxShadow: betType === 'number' ? '0 0 10px rgba(255,215,0,0.5)' : 'none'
+                        }}
                     />
                 </div>
 
-                <button onClick={losuj} style={styles.button} onMouseEnter={(e) => e.target.style.transform = 'scale(1.02)'} onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}>
-                    Kręć kołem (koszt: {bet} pkt)
+                {/* STAWKA */}
+                <div style={{ marginBottom: '20px' }}>
+                    <span>Stawka (min. 10):</span>
+                    <input
+                        type="number" min="10"
+                        value={betAmount}
+                        onChange={(e) => setBetAmount(parseInt(e.target.value) || 0)}
+                        onFocus={(e) => e.target.select()}
+                        style={{ ...styles.input, width: '100px', marginLeft: '10px' }}
+                    />
+                </div>
+
+                {/* PRZYCISK STARTU */}
+                <button
+                    onClick={spin} disabled={isSpinning}
+                    style={{
+                        width: '100%', padding: '16px', background: 'linear-gradient(gold, #b8860b)', color: 'black',
+                        fontWeight: '900', border: 'none', borderRadius: '12px', cursor: 'pointer',
+                        opacity: isSpinning ? 0.5 : 1, fontSize: '1.1rem'
+                    }}
+                >
+                    {isSpinning ? 'KRĘCENIE...' : 'ZAGRAJ'}
                 </button>
 
-                {wynik !== null && <div style={styles.result}>🎯 Wypadło: {wynik}</div>}
-                {komunikat && <div style={styles.message}>{komunikat}</div>}
+                <p style={{ marginTop: '15px', color: 'gold', fontWeight: 'bold', minHeight: '1.2em' }}>{komunikat}</p>
             </div>
         </div>
     );
