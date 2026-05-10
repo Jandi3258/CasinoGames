@@ -1,105 +1,141 @@
-// SERCE SERWERA NOWE FUNKCJE ITD PANOWIE
-const express = require('express');
-const cors = require('cors');
-const fs = require('fs'); // Potrzebne do obsługi pliku JSON
 require('dotenv').config();
+const express = require('express');
+const { Pool } = require('pg');
+const bcrypt = require('bcrypt');
+const cors = require('cors');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const USERS_FILE = './users.json';
+// 1. Konfiguracja połączenia z bazą danych
+const pool = new Pool({
+    user: process.env.DB_USER || 'postgres',
+    host: process.env.DB_HOST || 'localhost',
+    database: process.env.DB_DATABASE || 'casino_db',
+    password: process.env.DB_PASSWORD,
+    port: process.env.DB_PORT || 5432,
+});
 
-// Pomocnicza funkcja: Czytanie bazy z pliku
-const readUsers = () => {
-    if (!fs.existsSync(USERS_FILE)) fs.writeFileSync(USERS_FILE, '[]'); // Stwórz plik, jeśli go nie ma
-    const data = fs.readFileSync(USERS_FILE);
-    return JSON.parse(data);
+// 2. Inicjalizacja tabeli (wykonuje się raz przy starcie serwera)
+const initDb = async () => {
+    const query = `
+    CREATE TABLE IF NOT EXISTS users (
+      id SERIAL PRIMARY KEY,
+      username VARCHAR(50) UNIQUE NOT NULL,
+      password TEXT NOT NULL,
+      points INTEGER DEFAULT 1000
+    );
+  `;
+    try {
+        await pool.query(query);
+        console.log("✅ Tabela 'users' jest gotowa w PostgreSQL.");
+    } catch (err) {
+        console.error("❌ Błąd inicjalizacji bazy:", err);
+    }
 };
-
-// Pomocnicza funkcja: Zapis do pliku
-const writeUsers = (users) => {
-    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
-};
+initDb();
 
 // --- ENDPOINTY SYSTEMU KONT ---
 
-// Rejestracja
-app.post('/api/register', (req, res) => {
+// REJESTRACJA (z szyfrowaniem hasła)
+app.post('/api/register', async (req, res) => {
     const { username, password } = req.body;
-    const users = readUsers();
+    try {
+        // Szyfrujemy hasło przed zapisem
+        const saltRounds = 10;
+        const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    if (users.find(u => u.username === username)) {
-        return res.status(400).json({ message: 'Ten login jest już zajęty!' });
+        const result = await pool.query(
+            'INSERT INTO users (username, password) VALUES ($1, $2) RETURNING id, username, points',
+            [username, hashedPassword]
+        );
+
+        res.status(201).json({ message: 'Konto utworzone!', user: result.rows[0] });
+    } catch (err) {
+        console.error(err);
+        res.status(400).json({ message: 'Ten login jest już zajęty lub wystąpił błąd bazy!' });
     }
-
-    const newUser = { username, password, points: 1000 }; // Użytkownik zaczyna z 1000 punktów
-    users.push(newUser);
-    writeUsers(users);
-
-    res.status(201).json({ message: 'Konto utworzone!', user: newUser });
 });
 
-// Logowanie
-app.post('/api/login', (req, res) => {
+// LOGOWANIE (z weryfikacją szyfrowanego hasła)
+app.post('/api/login', async (req, res) => {
     const { username, password } = req.body;
-    const users = readUsers();
+    try {
+        const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
 
-    const user = users.find(u => u.username === username && u.password === password);
+        if (result.rows.length === 0) {
+            return res.status(401).json({ message: 'Błędny login lub hasło!' });
+        }
 
-    if (!user) {
-        return res.status(401).json({ message: 'Błędny login lub hasło!' });
+        const user = result.rows[0];
+
+        // Sprawdzamy czy wpisane hasło pasuje do hashu w bazie
+        const match = await bcrypt.compare(password, user.password);
+
+        if (!match) {
+            return res.status(401).json({ message: 'Błędny login lub hasło!' });
+        }
+
+        // Nie wysyłamy hasła do frontendu
+        const { password: _, ...userSafe } = user;
+        res.json({ message: 'Zalogowano pomyślnie!', user: userSafe });
+    } catch (err) {
+        res.status(500).json({ message: 'Błąd serwera przy logowaniu' });
     }
-
-    res.json({ message: 'Zalogowano pomyślnie!', user });
 });
 
-// Endpoint do aktualizacji punktów
-app.post('/api/update-points', (req, res) => {
+// AKTUALIZACJA PUNKTÓW (bezpośrednio w bazie SQL)
+app.post('/api/update-points', async (req, res) => {
     const { username, amount } = req.body;
-    const users = readUsers();
-    const userIndex = users.findIndex(u => u.username === username);
+    try {
+        const result = await pool.query(
+            'UPDATE users SET points = points + $1 WHERE username = $2 RETURNING points',
+            [amount, username]
+        );
 
-    if (userIndex !== -1) {
-        users[userIndex].points += amount; // amount może być ujemny (np. -10) lub dodatni (np. +50)
-        writeUsers(users);
-        res.json({ success: true, newPoints: users[userIndex].points });
-    } else {
-        res.status(404).json({ message: "Użytkownik nie znaleziony" });
+        if (result.rows.length > 0) {
+            res.json({ success: true, newPoints: result.rows[0].points });
+        } else {
+            res.status(404).json({ message: "Użytkownik nie znaleziony" });
+        }
+    } catch (err) {
+        res.status(500).json({ message: "Błąd przy aktualizacji punktów" });
     }
 });
 
-app.post("/api/deposit", (req, res) => {
+// DEPOZYT (Pakiety punktów)
+app.post("/api/deposit", async (req, res) => {
     const { username, packageId } = req.body;
-    const users = readUsers();
-    const userIndex = users.findIndex(u => u.username === username);
-
-    if (userIndex === -1) {
-        return res.status(404).json({ message: "Uzytkownik nie znaleziony" });
-    }
-
     const packages = {
-        small: { points: 100, cost: 10 },
-        medium: { points: 500, cost: 50 },
-        large: { points: 1000, cost: 100 }
+        small: 100,
+        medium: 500,
+        large: 1000
     };
 
     if (!packages[packageId]) {
-        return res.status(400).json({ message: "Nieprawidlowy pakiet" });
+        return res.status(400).json({ message: "Nieprawidłowy pakiet" });
     }
 
-    users[userIndex].points += packages[packageId].points;
-    writeUsers(users);
-
-    res.json({ success: true, newPoints: users[userIndex].points, message: "Dodano " + packages[packageId].points + " punktow" });
+    try {
+        const result = await pool.query(
+            'UPDATE users SET points = points + $1 WHERE username = $2 RETURNING points',
+            [packages[packageId], username]
+        );
+        res.json({
+            success: true,
+            newPoints: result.rows[0].points,
+            message: `Dodano ${packages[packageId]} punktów`
+        });
+    } catch (err) {
+        res.status(500).json({ message: "Błąd depozytu" });
+    }
 });
 
-// Prosta informacja, że kasyno działa
 app.get('/', (req, res) => {
-    res.send('🎰 Witamy w serwerze Kasyna! Logika działa.');
+    res.send('🎰 Witamy w serwerze Kasyna! Postgres i Bcrypt działają.');
 });
 
-// Endpoint dla Twojego UI - lista gier
 app.get('/api/games', (req, res) => {
     res.json([
         { id: 'farmer', name: 'Super Farmer', icon: '🚜' },
@@ -108,4 +144,4 @@ app.get('/api/games', (req, res) => {
 });
 
 const PORT = 8080;
-app.listen(PORT, () => console.log(`🚀 Backend działa na http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Backend działa na http://localhost:${PORT} (Postgres Mode)`));
