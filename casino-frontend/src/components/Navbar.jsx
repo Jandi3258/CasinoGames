@@ -23,7 +23,7 @@ const Navbar = ({ user, onLogout }) => (
           fontSize: '0.95rem',
           whiteSpace: 'nowrap',
           flexShrink: 0
-        }}>🏠 Strona</Link>
+        }}>🏠 Strona Glowna</Link>
         
         <Link to="/payment" style={{ 
           color: 'gold', 
