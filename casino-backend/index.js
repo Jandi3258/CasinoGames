@@ -110,7 +110,11 @@ app.post("/api/deposit", async (req, res) => {
     const packages = {
         small: 100,
         medium: 500,
-        large: 1000
+        large: 1000,
+        p500: 5000,
+        p1000: 10000,
+        p2500: 25000,
+        xlarge: 100000
     };
 
     if (!packages[packageId]) {

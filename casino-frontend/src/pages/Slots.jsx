@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 
 const SYMBOL_CONFIG = [
   { img: '🍒', label: 'Cherry', mult: 5, weight: 40 },
@@ -11,17 +11,65 @@ const SYMBOL_CONFIG = [
 const Slots = ({ user, updatePoints }) => {
   const [reels, setReels] = useState(['❓', '❓', '❓']);
   const [isSpinning, setIsSpinning] = useState(false);
-  const [bet, setBet] = useState(10);
+  const [bet, setBet] = useState('');
   const [komunikat, setKomunikat] = useState('Powodzenia!');
+  const [spinningReels, setSpinningReels] = useState(['stop', 'stop', 'stop']);
 
   const weightedSymbols = useMemo(() => 
     SYMBOL_CONFIG.flatMap(s => Array(s.weight).fill(s)), []
   );
 
+  const spinningReelsRef = useRef(['stop', 'stop', 'stop']);
+
+  const updateSpinning = (updater) => {
+    setSpinningReels(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      spinningReelsRef.current = next;
+      return next;
+    });
+  };
+
   const getRandomSymbol = () => weightedSymbols[Math.floor(Math.random() * weightedSymbols.length)];
+
+  const slowDownReel = (index, finalSymbol, delays) => {
+    updateSpinning(prev => {
+      const newSpinning = [...prev];
+      newSpinning[index] = 'slow';
+      return newSpinning;
+    });
+    let i = 0;
+    const next = () => {
+      setReels(prev => {
+        const newReels = [...prev];
+        newReels[index] = getRandomSymbol().img;
+        return newReels;
+      });
+      i++;
+      if (i < delays.length) {
+        setTimeout(next, delays[i]);
+      } else {
+        setReels(prev => {
+          const newReels = [...prev];
+          newReels[index] = finalSymbol.img;
+          return newReels;
+        });
+        updateSpinning(prev => {
+          const newSpinning = [...prev];
+          newSpinning[index] = 'stop';
+          return newSpinning;
+        });
+      }
+    };
+    next();
+  };
 
   const cssAnimations = `
     @keyframes roll {
+      0% { transform: translateY(-100%); opacity: 0; }
+      50% { opacity: 1; }
+      100% { transform: translateY(100%); opacity: 0; }
+    }
+    @keyframes slow-roll {
       0% { transform: translateY(-100%); opacity: 0; }
       50% { opacity: 1; }
       100% { transform: translateY(100%); opacity: 0; }
@@ -31,6 +79,7 @@ const Slots = ({ user, updatePoints }) => {
       100% { transform: translateY(0); opacity: 1; }
     }
     .reel-spin { animation: roll 0.12s linear infinite; }
+    .reel-slow { animation: slow-roll 0.3s linear infinite; }
     .reel-finish { animation: finish 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
   `;
 
@@ -128,44 +177,65 @@ const Slots = ({ user, updatePoints }) => {
   };
 
   const spin = async () => {
-    if (isSpinning || user.points < bet || bet <= 0) return;
+    if (isSpinning) return;
+
+    if (bet === '' || bet === null) {
+      setKomunikat('❌ Wpisz stawkę!');
+      return;
+    }
+    const numericBet = parseInt(bet, 10);
+    if (isNaN(numericBet) || numericBet <= 0) {
+      setKomunikat('❌ Wpisz poprawną stawkę!');
+      return;
+    }
+    if (user.points < numericBet) {
+      setKomunikat('❌ Za mało punktów!');
+      return;
+    }
 
     setIsSpinning(true);
     setKomunikat('Mieszanie...');
-    await updatePoints(-bet);
+    await updatePoints(-numericBet);
 
-    const duration = 1500;
-    const startTime = Date.now();
-    
-    const timer = setInterval(() => {
-      setReels([getRandomSymbol().img, getRandomSymbol().img, getRandomSymbol().img]);
-      if (Date.now() - startTime > duration) {
-        clearInterval(timer);
-        finalize();
-      }
+    const finalSymbols = [getRandomSymbol(), getRandomSymbol(), getRandomSymbol()];
+    updateSpinning(['spin', 'spin', 'spin']);
+
+    const spinInterval = setInterval(() => {
+      setReels(prev => prev.map((reel, i) => spinningReelsRef.current[i] === 'spin' ? getRandomSymbol().img : reel));
     }, 100);
 
-    const finalize = () => {
-      const final = [getRandomSymbol(), getRandomSymbol(), getRandomSymbol()];
-      setReels(final.map(s => s.img));
-      
-      const [s1, s2, s3] = final;
+    // Zatrzymaj pierwszy bęben z wyhamowaniem
+    setTimeout(() => {
+      slowDownReel(0, finalSymbols[0], [200, 300, 400, 500]);
+    }, 1200);
+
+    // Zatrzymaj drugi bęben z wyhamowaniem
+    setTimeout(() => {
+      slowDownReel(1, finalSymbols[1], [200, 300, 400, 500]);
+    }, 2000);
+
+    // Zatrzymaj trzeci bęben z wyhamowaniem
+    setTimeout(() => {
+      slowDownReel(2, finalSymbols[2], [200, 300, 400, 500]);
+      clearInterval(spinInterval);
+
+      // Sprawdź wygraną po krótkim opóźnieniu
       setTimeout(() => {
+        const [s1, s2, s3] = finalSymbols;
         if (s1.img === s2.img && s2.img === s3.img) {
-          const win = bet * s1.mult;
+          const win = numericBet * s1.mult;
           setKomunikat(`🔥 JACKPOT: +${win} PKT!`);
           updatePoints(win);
         } else if (s1.img === s2.img || s2.img === s3.img || s1.img === s3.img) {
-          // Wygrana za parę (2.5x stawka)
-          const win = Math.floor(bet * 2.5);
+          const win = Math.floor(numericBet * 2.5);
           setKomunikat(`✨ PARA: +${win} PKT!`);
           updatePoints(win);
         } else {
           setKomunikat('Graj dalej! 🍀');
         }
         setIsSpinning(false);
-      }, 500);
-    };
+      }, 1000);
+    }, 2800);
   };
 
   return (
@@ -190,7 +260,7 @@ const Slots = ({ user, updatePoints }) => {
         <div style={styles.machine}>
           {reels.map((symbol, i) => (
             <div key={i} style={styles.reelWindow}>
-              <div className={isSpinning ? 'reel-spin' : 'reel-finish'}>
+              <div className={spinningReels[i] === 'spin' ? 'reel-spin' : spinningReels[i] === 'slow' ? 'reel-slow' : 'reel-finish'}>
                 {symbol}
               </div>
             </div>
@@ -202,7 +272,7 @@ const Slots = ({ user, updatePoints }) => {
           <input 
             type="number" 
             value={bet} 
-            onChange={e => setBet(Math.max(1, Number(e.target.value)))}
+            onChange={e => setBet(e.target.value)}
             style={styles.input}
             disabled={isSpinning}
           />

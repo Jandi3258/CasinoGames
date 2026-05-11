@@ -11,7 +11,7 @@ const blackNumbers = [2, 4, 6, 8, 10, 11, 13, 15, 17, 20, 22, 24, 26, 28, 29, 31
 const Ruletka = ({ user, updatePoints }) => {
     // STANY GRY
     const [wynik, setWynik] = useState(null);
-    const [betAmount, setBetAmount] = useState(10);
+    const [betAmount, setBetAmount] = useState('');
     const [isSpinning, setIsSpinning] = useState(false);
     const [komunikat, setKomunikat] = useState('Wybierz typ zakładu i kręć!');
     const [wheelRotation, setWheelRotation] = useState(0);
@@ -67,18 +67,24 @@ const Ruletka = ({ user, updatePoints }) => {
             setKomunikat('❌ Wybierz kolor zakładu!');
             return;
         }
-        if (isNaN(betAmount) || betAmount < 10) {
+        // WALIDACJA STAWKI (pozwalamy na puste pole, ale wtedy nie obstawiamy)
+        if (betAmount === '' || betAmount === null) {
+            setKomunikat('❌ Wpisz stawkę przed zagraniem!');
+            return;
+        }
+        const numericBet = parseInt(betAmount, 10);
+        if (isNaN(numericBet) || numericBet < 10) {
             setKomunikat('❌ Minimalna stawka to 10 pkt!');
             return;
         }
-        if (user.points < betAmount) {
+        if (user.points < numericBet) {
             setKomunikat('❌ Za mało punktów!');
             return;
         }
 
         setIsSpinning(true);
         setKomunikat('🎰 Losowanie w toku...');
-        await updatePoints(-betAmount);
+        await updatePoints(-numericBet);
 
         // OBLICZANIE WYNIKU I ROTACJI
         const randomIndex = Math.floor(Math.random() * NUM_SEGMENTS);
@@ -103,10 +109,10 @@ const Ruletka = ({ user, updatePoints }) => {
 
             if (betType === 'color' && selectedColor === colorWin) {
                 won = true;
-                payout = betAmount * (selectedColor === 'green' ? 36 : 2);
+                payout = numericBet * (selectedColor === 'green' ? 36 : 2);
             } else if (betType === 'number' && parseInt(selectedNumber) === winningNum) {
                 won = true;
-                payout = betAmount * 36;
+                payout = numericBet * 36;
             }
 
             if (won) {
@@ -210,7 +216,7 @@ const Ruletka = ({ user, updatePoints }) => {
                     <input
                         type="number" min="10"
                         value={betAmount}
-                        onChange={(e) => setBetAmount(parseInt(e.target.value) || 0)}
+                        onChange={(e) => setBetAmount(e.target.value)}
                         onFocus={(e) => e.target.select()}
                         style={{ ...styles.input, width: '100px', marginLeft: '10px' }}
                     />
@@ -218,11 +224,11 @@ const Ruletka = ({ user, updatePoints }) => {
 
                 {/* PRZYCISK STARTU */}
                 <button
-                    onClick={spin} disabled={isSpinning}
+                    onClick={spin} disabled={isSpinning || betAmount === ''}
                     style={{
                         width: '100%', padding: '16px', background: 'linear-gradient(gold, #b8860b)', color: 'black',
-                        fontWeight: '900', border: 'none', borderRadius: '12px', cursor: 'pointer',
-                        opacity: isSpinning ? 0.5 : 1, fontSize: '1.1rem'
+                        fontWeight: '900', border: 'none', borderRadius: '12px', cursor: betAmount === '' ? 'not-allowed' : 'pointer',
+                        opacity: (isSpinning || betAmount === '') ? 0.5 : 1, fontSize: '1.1rem'
                     }}
                 >
                     {isSpinning ? 'KRĘCENIE...' : 'ZAGRAJ'}

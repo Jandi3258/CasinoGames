@@ -7,7 +7,11 @@ const Payment = ({ user, updatePoints }) => {
     const packages = {
         small: { points: 100, cost: 10 },
         medium: { points: 500, cost: 50 },
-        large: { points: 1000, cost: 100 }
+        large: { points: 1000, cost: 100 },
+        p500: { points: 5000, cost: 500 },
+        p1000: { points: 10000, cost: 1000 },
+        p2500: { points: 25000, cost: 2500 },
+        xlarge: { points: 100000, cost: 10000 }
     };
 
     const formatCardNumber = (value) => value.replace(/\D/g, '');
@@ -93,6 +97,10 @@ const Payment = ({ user, updatePoints }) => {
                             <option value="small">100 punktów - 10 zł</option>
                             <option value="medium">500 punktów - 50 zł</option>
                             <option value="large">1000 punktów - 100 zł</option>
+                            <option value="p500">5000 punktów - 500 zł</option>
+                            <option value="p1000">10000 punktów - 1000 zł</option>
+                            <option value="p2500">25000 punktów - 2500 zł</option>
+                            <option value="xlarge">100000 punktów - 10000 zł</option>
                         </select>
                     </div>
 
