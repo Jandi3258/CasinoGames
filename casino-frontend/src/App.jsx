@@ -7,6 +7,7 @@ import Home from './pages/Home';
 import Ruletka from './pages/Ruletka';
 import Blackjack from './pages/Blackjack';
 import Slots from './pages/Slots';
+import HorseRace from './pages/HorseRace';
 import Auth from './pages/Auth';
 import Payment from './pages/Payment';
 
@@ -71,6 +72,7 @@ function App() {
                         <Route path="/ruletka" element={<Ruletka user={loggedUser} updatePoints={updatePoints}/>} />
                         <Route path="/blackjack" element={<Blackjack user={loggedUser} updatePoints={updatePoints}/>} />
                         <Route path="/slots" element={<Slots user={loggedUser} updatePoints={updatePoints}/>} />
+                        <Route path="/horserace" element={<HorseRace user={loggedUser} updatePoints={updatePoints}/>} />
                         <Route path="/payment" element={<Payment user={loggedUser} updatePoints={updatePoints}/>} />
                         {/* Przekierowanie, jeśli ktoś wejdzie na nieistniejącą stronę */}
                         <Route path="*" element={<Navigate to="/" />} />

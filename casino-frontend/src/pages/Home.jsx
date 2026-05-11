@@ -103,10 +103,10 @@ const Home = () => {
       background: 'linear-gradient(135deg, rgba(255, 215, 0, 0.3) 0%, rgba(184, 134, 11, 0.3) 100%)'
     },
     { 
-      id: 'farmer', 
-      icon: '🚜', 
-      name: 'Super Farmer', 
-      path: '/farmer',
+      id: 'horserace', 
+      icon: '🐴', 
+      name: 'Horse Race', 
+      path: '/horserace',
       background: 'linear-gradient(135deg, rgba(139, 69, 19, 0.4) 0%, rgba(107, 142, 35, 0.3) 100%)'
     }
   ];
