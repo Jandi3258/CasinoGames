@@ -47,10 +47,25 @@ function App() {
     // Jeśli JEST zalogowany, pokazujemy całe kasyno
     return (
         <Router>
-            <div className="App" style={{ background: 'black', color: 'white', minHeight: '100vh' }}>
+            <div className="App" style={{ 
+              background: 'black', 
+              color: 'white', 
+              minHeight: '100vh',
+              display: 'flex',
+              flexDirection: 'column',
+              margin: 0,
+              padding: 0,
+              overflow: 'hidden'
+            }}>
                 {/* Przekazujemy dane użytkownika do Navbar, żeby mógł wyświetlić punkty */}
                 <Navbar user={loggedUser} onLogout={handleLogout} />
-                <main id="center">
+                <main id="center" style={{
+                  flex: 1,
+                  overflow: 'auto',
+                  width: '100%',
+                  margin: 0,
+                  padding: 0
+                }}>
                     <Routes>
                         <Route path="/" element={<Home user={loggedUser} />} />
                         <Route path="/ruletka" element={<Ruletka user={loggedUser} updatePoints={updatePoints}/>} />

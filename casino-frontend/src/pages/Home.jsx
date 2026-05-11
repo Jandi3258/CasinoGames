@@ -4,19 +4,24 @@ import { Link } from 'react-router-dom';
 const Home = () => {
   const styles = {
     container: {
-      padding: '60px 30px',
+      padding: '30px 20px',
       minHeight: '100vh',
       background: 'radial-gradient(circle at top right, #2a1f4d 0%, #0a0f1e 50%, #000 100%)',
-      color: 'white'
+      color: 'white',
+      display: 'flex',
+      flexDirection: 'column',
+      boxSizing: 'border-box',
+      overflow: 'hidden'
     },
     header: {
       textAlign: 'center',
-      marginBottom: '80px'
+      marginBottom: '30px'
     },
     title: {
-      fontSize: '3.5rem',
+      fontSize: 'clamp(2rem, 5vw, 3rem)',
       fontWeight: '900',
-      marginBottom: '20px',
+      marginBottom: '10px',
+      margin: '0 0 10px 0',
       background: 'linear-gradient(135deg, #ffb347, #ffcc33, #ffd700)',
       WebkitBackgroundClip: 'text',
       WebkitTextFillColor: 'transparent',
@@ -24,56 +29,86 @@ const Home = () => {
       letterSpacing: '0.05em'
     },
     subtitle: {
-      fontSize: '1.3rem',
+      fontSize: 'clamp(0.9rem, 3vw, 1.1rem)',
       color: '#aaa',
-      fontWeight: '300'
+      fontWeight: '300',
+      margin: '0'
     },
     gamesGrid: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-      gap: '30px',
-      maxWidth: '1200px',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '12px',
+      maxWidth: '900px',
       margin: '0 auto',
-      padding: '0 20px'
+      padding: '0',
+      width: '100%',
+      boxSizing: 'border-box'
     },
     gameCard: {
       position: 'relative',
-      padding: '40px 30px',
-      borderRadius: '20px',
-      background: 'rgba(40, 45, 70, 0.4)',
-      border: '2px solid rgba(255, 179, 71, 0.3)',
+      padding: 'clamp(20px, 3vw, 35px) clamp(20px, 4vw, 30px)',
+      borderRadius: '12px',
       textDecoration: 'none',
       color: '#fff',
-      fontSize: '1.1rem',
-      fontWeight: '600',
+      fontSize: 'clamp(1.1rem, 3vw, 1.4rem)',
+      fontWeight: '700',
       cursor: 'pointer',
-      transition: 'all 0.3s ease',
+      transition: 'all 0.4s ease',
       display: 'flex',
       alignItems: 'center',
-      justifyContent: 'center',
-      textAlign: 'center',
+      justifyContent: 'flex-start',
+      textAlign: 'left',
       backdropFilter: 'blur(10px)',
-      boxShadow: '0 8px 32px rgba(0,0,0,0.3)'
+      boxShadow: '0 12px 40px rgba(0,0,0,0.4)',
+      border: '2px solid rgba(255, 255, 255, 0.1)',
+      overflow: 'hidden',
+      boxSizing: 'border-box',
+      width: '100%',
+      minHeight: '60px'
     },
     gameCardHover: {
-      transform: 'translateY(-8px)',
-      borderColor: 'rgba(255, 179, 71, 0.8)',
-      background: 'rgba(60, 65, 90, 0.6)',
-      boxShadow: '0 20px 50px rgba(255, 179, 71, 0.2)'
+      transform: 'translateX(10px) scale(1.02)',
+      boxShadow: '0 20px 60px rgba(255, 179, 71, 0.3)',
+      border: '2px solid rgba(255, 179, 71, 0.6)'
     },
     emoji: {
-      marginRight: '15px',
-      fontSize: '2.5rem'
+      marginRight: 'clamp(8px, 2vw, 15px)',
+      fontSize: 'clamp(1.8rem, 4vw, 2.2rem)',
+      flexShrink: 0
     }
   };
 
   const [hoveredGame, setHoveredGame] = React.useState(null);
 
   const games = [
-    { id: 'ruletka', icon: '🎡', name: 'Ruletka', path: '/ruletka' },
-    { id: 'blackjack', icon: '♠️', name: 'BlackJack', path: '/blackjack' },
-    { id: 'slots', icon: '🎰', name: 'Slots', path: '/slots' },
-    { id: 'farmer', icon: '🚜', name: 'Super Farmer', path: '/farmer' }
+    { 
+      id: 'ruletka', 
+      icon: '🎡', 
+      name: 'Ruletka', 
+      path: '/ruletka',
+      background: 'linear-gradient(135deg, rgba(139, 0, 139, 0.4) 0%, rgba(75, 0, 130, 0.3) 100%)'
+    },
+    { 
+      id: 'blackjack', 
+      icon: '♠️', 
+      name: 'BlackJack', 
+      path: '/blackjack',
+      background: 'linear-gradient(135deg, rgba(0, 100, 0, 0.4) 0%, rgba(34, 139, 34, 0.3) 100%)'
+    },
+    { 
+      id: 'slots', 
+      icon: '🎰', 
+      name: 'Slots', 
+      path: '/slots',
+      background: 'linear-gradient(135deg, rgba(255, 215, 0, 0.3) 0%, rgba(184, 134, 11, 0.3) 100%)'
+    },
+    { 
+      id: 'farmer', 
+      icon: '🚜', 
+      name: 'Super Farmer', 
+      path: '/farmer',
+      background: 'linear-gradient(135deg, rgba(139, 69, 19, 0.4) 0%, rgba(107, 142, 35, 0.3) 100%)'
+    }
   ];
 
   return (
@@ -90,6 +125,7 @@ const Home = () => {
             to={game.path}
             style={{
               ...styles.gameCard,
+              background: game.background,
               ...(hoveredGame === game.id ? styles.gameCardHover : {})
             }}
             onMouseEnter={() => setHoveredGame(game.id)}
