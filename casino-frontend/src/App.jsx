@@ -70,7 +70,14 @@ function App() {
                     <Routes>
                         <Route path="/" element={<Home user={loggedUser} />} />
                         <Route path="/ruletka" element={<Ruletka user={loggedUser} updatePoints={updatePoints}/>} />
-                        <Route path="/blackjack" element={<Blackjack user={loggedUser} updatePoints={updatePoints}/>} />
+                        <Route path="/blackjack" element={<Blackjack user={loggedUser} 
+                            updatePoints={(amount) => {
+                                // bez POSTa bo to obsluguje WebSocket
+                                const updatedUser = { ...loggedUser, points: amount };
+                                setLoggedUser(updatedUser);
+                                localStorage.setItem('user', JSON.stringify(updatedUser));
+                            }}/>} 
+                        />
                         <Route path="/slots" element={<Slots user={loggedUser} updatePoints={updatePoints}/>} />
                         <Route path="/horserace" element={<HorseRace user={loggedUser} updatePoints={updatePoints}/>} />
                         <Route path="/payment" element={<Payment user={loggedUser} updatePoints={updatePoints}/>} />
