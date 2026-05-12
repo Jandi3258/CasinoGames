@@ -1,0 +1,21 @@
+.Hand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 170px;
+  padding: 0 36px;
+  gap: 0;
+}
+
+.Hand .card {
+  margin-left: -42px;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.Hand .card:first-child {
+  margin-left: 0;
+}
+
+.Hand--flipped {
+  transform: scaleY(-1);
+}

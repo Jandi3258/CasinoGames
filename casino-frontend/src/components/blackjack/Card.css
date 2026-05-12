@@ -1,0 +1,53 @@
+.card {
+	position: relative;
+	perspective: 1000px;
+	border-radius: 5%;
+	flex: 0 0 auto;
+  overflow: visible;
+}
+
+.card-inner {
+  width: 100%;
+  height: 100%;
+
+  border: 2px solid rgba(100, 100, 100, 1);
+  border-radius: 10%;
+  /* throwing out the border (for now at least) bc of image funkery */
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.5s ease-out;
+}
+
+.card.flipped .card-inner {
+  transform: rotateY(180deg);
+}
+
+.card-face {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  display: block;
+}
+
+.card-face--back {
+  transform: rotateY(180deg);
+}
+
+.card-face .front,
+.card-face .back {
+  display: block;
+}
+
+.card-face .back {
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+}
+
+
+.card-face .front {
+    display: block;
+}

@@ -1,0 +1,255 @@
+.table-shell {
+  height: calc(100vh - 70px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: radial-gradient(circle at top right, #2a1f4d 0%, #0a0f1e 50%, #000 100%); /* this is from pick menu/slots */
+}
+
+.table {
+  position: relative;
+  width: min(1500px, 100%);
+  height: min(800px, 92vh);
+  border: 6px solid #1d140f;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2e7c43 0%, #1f6b36 100%);
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+
+.table::before {
+  position: absolute;
+  inset: 6px;
+  border-radius: calc(50% - 6px);
+  pointer-events: none;
+  z-index: 0;
+  background-image: radial-gradient(circle at 15% 10%, rgba(255,255,255,0.04), transparent 18%),
+                    repeating-linear-gradient(45deg, rgba(255,255,255,0.02) 0 2px, transparent 2px 6px);
+  mix-blend-mode: overlay;
+  opacity: 0.9;
+}
+
+/* ensure content sits above the decorative overlay */
+.table > * {
+  position: relative;
+  z-index: 2;
+}
+
+.table__meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  color: rgba(247, 240, 223, 0.82);
+}
+
+/* hide the central wallet (we show points near hands instead) */
+.center-panel__currency { display: none; }
+
+.start-button {
+  padding: 8px 56px;
+  background: linear-gradient(135deg, #ffcc33, #ffa500);
+  color: #000;
+  font-weight: 800;
+  border: none;
+  box-shadow: 0 8px 20px rgba(255, 170, 0, 0.12);
+}
+
+.center-panel__bet {
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #ffd86b;
+}
+
+.center-panel__status {
+  text-align: center;
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #fff;
+}
+
+.hand-score {
+  color: burlywood;
+  font-weight: 700;
+  padding: 6px 12px;
+  background: rgba(0,0,0,0.45);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 8px;
+}
+
+.hand-score--dealer {
+  position: absolute;
+  top: -34px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 6;
+}
+
+.hand-score--player {
+  position: absolute;
+  bottom: -34px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 6;
+}
+
+.dealer-area,
+.player-area {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+}
+
+.dealer-area {
+  top: 80px;
+}
+
+.player-area {
+  bottom: 80px;
+}
+
+.center-panel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border-radius: 10%;
+  transform: translate(-50%, -50%);
+  width: min(420px, calc(100% - 56px));
+  min-height: 120px;
+  padding: 22px 24px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
+.center-panel__currency {
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: burlywood;
+}
+
+.center-panel__error {
+  color: rgb(255, 135, 135);
+}
+
+
+.bet-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+  width: 100%;
+}
+
+
+.bet-field__label {
+  font-size: 0.92rem;
+  text-transform: none;
+  letter-spacing: 0;
+  color: rgba(247, 240, 223, 0.82);
+}
+
+
+.bet-field__input {
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 0;
+  font-size: 1rem;
+  color: #f7f0df;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.start-button:disabled,
+.action-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.start-button {
+  padding: 5px 70px;
+}
+
+.action-panel {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 4;
+}
+
+.action-panel--left {
+  left: 20%;
+  transform: translate(-50%, -50%);
+}
+
+.action-panel--right {
+  right: 20%;
+  transform: translate(50%, -50%);
+}
+
+.action-button {
+  font-size: 1rem;
+  min-width: 120px;
+  min-height: 70px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.action-button:not(:disabled):hover {
+  background: rgb(255, 255, 255);
+}
+
+.action-button:disabled {
+  background: rgba(155, 155, 155, 0.7);
+  cursor: not-allowed;
+}
+
+.card-pile-stage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.card-pile-stage__card {
+  position: absolute;
+  display: block;
+  pointer-events: none;
+}
+
+/* HIT action as a card not a button */
+.pile-button {
+  /*position: relative;*/
+  display: absolute;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.pile-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.75;
+}
+
+.pile-button__card {
+  position: absolute;
+  pointer-events: none;
+}
+/*===================================*/
+
+.confetti-overlay{
+  position: relative;
+}
