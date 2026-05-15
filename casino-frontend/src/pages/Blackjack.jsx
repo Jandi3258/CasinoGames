@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Blackjack = ({ user, updatePoints }) => {
+const Blackjack = ({ user, syncPoints }) => {
   const styles = {
     container: {
       padding: '60px 30px',

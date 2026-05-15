@@ -8,7 +8,7 @@ const DEGREES_PER_SEGMENT = 360 / NUM_SEGMENTS;
 const redNumbers = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
 const blackNumbers = [2, 4, 6, 8, 10, 11, 13, 15, 17, 20, 22, 24, 26, 28, 29, 31, 33, 35];
 
-const Ruletka = ({ user, updatePoints }) => {
+const Roulette = ({ user, syncPoints}) => {
     // STANY GRY
     const [wynik, setWynik] = useState(null);
     const [betAmount, setBetAmount] = useState('');
@@ -72,25 +72,37 @@ const Ruletka = ({ user, updatePoints }) => {
             setKomunikat('❌ Wpisz stawkę przed zagraniem!');
             return;
         }
+
         const numericBet = parseInt(betAmount, 10);
-        if (isNaN(numericBet) || numericBet < 10) {
-            setKomunikat('❌ Minimalna stawka to 10 pkt!');
+        if (isNaN(numericBet) || numericBet < 10 || user.points < numericBet) {
+            setKomunikat('❌ Za mało punktów lub błędna stawka!');
             return;
         }
-        if (user.points < numericBet) {
-            setKomunikat('❌ Za mało punktów!');
+
+        try {
+            const res = await fetch('http://localhost:8080/api/update-balance-only', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: user.username, amount: -numericBet })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                syncPoints(data.newPoints);
+            } else {
+                setKomunikat(`❌ Błąd: ${data.message}`);
+                return;
+            }
+        } catch {
+            setKomunikat("❌ Brak połączenia z serwerem!");
             return;
         }
 
         setIsSpinning(true);
         setKomunikat('🎰 Losowanie w toku...');
-        await updatePoints(-numericBet);
 
         // OBLICZANIE WYNIKU I ROTACJI
         const randomIndex = Math.floor(Math.random() * NUM_SEGMENTS);
         const winningNum = W[randomIndex];
-
-        // Celujemy w środek segmentu
         const targetAngle = (randomIndex * DEGREES_PER_SEGMENT) + (DEGREES_PER_SEGMENT / 2);
         const currentRotationNormalized = wheelRotation % 360;
         const spins = 360 * 10;
@@ -100,13 +112,11 @@ const Ruletka = ({ user, updatePoints }) => {
 
         // OCZEKIWANIE NA ZAKOŃCZENIE ANIMACJI
         setTimeout(async () => {
-            setIsSpinning(false);
-            setWynik(winningNum); // Wyświetlenie wyniku w środku
             const colorWin = getNumberColor(winningNum);
-
             let won = false;
             let payout = 0;
 
+            // Obliczanie wygranej
             if (betType === 'color' && selectedColor === colorWin) {
                 won = true;
                 payout = numericBet * (selectedColor === 'green' ? 36 : 2);
@@ -115,11 +125,39 @@ const Ruletka = ({ user, updatePoints }) => {
                 payout = numericBet * 36;
             }
 
-            if (won) {
-                setKomunikat(`🎉 WYGRANA! Wypadło ${winningNum}. +${payout} pkt!`);
-                await updatePoints(payout);
-            } else {
-                setKomunikat(`💀 Przegrana. Wypadło ${winningNum}. Spróbuj jeszcze raz!`);
+            // --- 5. KROK 2: ZAPIS ZAKŁADU I EWENTUALNA WYPŁATA ---
+            try {
+                const res = await fetch('http://localhost:8080/api/place-bet', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: user.username,
+                        betAmount: numericBet,
+                        payout: payout,
+                        won: won,
+                        gameName: 'Roulette'
+                    })
+                });
+                const data = await res.json();
+
+                if (res.ok && won) {
+                    syncPoints(data.newPoints);
+                }
+
+                // Ustawienie komunikatów końcowych
+                setWynik(winningNum);
+                if (won) {
+                    setKomunikat(`🎉 WYGRANA! Wypadło ${winningNum} (${colorWin}). +${payout} pkt!`);
+                } else {
+                    setKomunikat(`💀 Przegrana. Wypadło ${winningNum} (${colorWin}).`);
+                }
+
+            } catch (err) {
+                console.error("Błąd zapisu zakładu:", err);
+                setKomunikat("⚠️ Zakład rozliczony lokalnie (błąd bazy).");
+            } finally {
+                // TO JEST KLUCZOWE: Zawsze wyłączamy stan kręcenia na końcu
+                setIsSpinning(false);
             }
         }, 4000);
     };
@@ -159,7 +197,7 @@ const Ruletka = ({ user, updatePoints }) => {
 
     return (
         <div style={styles.container}>
-            <h2 style={{ letterSpacing: '2px', textTransform: 'uppercase' }}>🎡 Ruletka</h2>
+            <h2 style={{ letterSpacing: '2px', textTransform: 'uppercase' }}>🎡Roulette</h2>
             <p style={{ color: 'gold', fontSize: '1.2rem' }}>💰 Saldo: {user.points} pkt</p>
 
             {/* KOŁO RULETKI */}
@@ -240,4 +278,4 @@ const Ruletka = ({ user, updatePoints }) => {
     );
 };
 
-export default Ruletka;
+export default Roulette;

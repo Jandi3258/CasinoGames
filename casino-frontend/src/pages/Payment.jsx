@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const Payment = ({ user, updatePoints }) => {
+const Payment = ({ user, syncPoints }) => {
     const [packageId, setPackageId] = useState('small');
     const [cardData, setCardData] = useState({ number: '', expiry: '', cvv: '' });
 
@@ -70,14 +70,14 @@ const Payment = ({ user, updatePoints }) => {
             });
             
             const data = await res.json();
-            
+
             if (res.ok) {
-                const updatedUser = { ...user, points: data.newPoints };
-                localStorage.setItem('user', JSON.stringify(updatedUser));
-                setTimeout(() => window.location.reload(), 500);
+                syncPoints(data.newPoints); // Płynna aktualizacja bez przeładowania strony!
+                alert("Konto doładowane!");
             } else {
                 alert('Błąd: ' + data.message);
             }
+            // eslint-disable-next-line no-unused-vars
         } catch (error) {
             alert('Błąd połączenia z serwerem na http://localhost:8080');
         }
