@@ -76,89 +76,72 @@ const Slots = ({ user, syncPoints }) => {
       return;
     }
 
-    try {
-      const res = await fetch('http://localhost:8080/api/update-balance-only', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: user.username, amount: -numericBet })
-      });
-      const data = await res.json();
-
-      if (res.ok) {
-        syncPoints(data.newPoints); // Synchronizacja salda w App.jsx
-      } else {
-        setKomunikat('❌ Błąd: ' + data.message);
-        return;
-      }
-    } catch {
-      setKomunikat('❌ Brak połączenia z serwerem!');
-      return;
-    }
-
     setIsSpinning(true);
     setKomunikat('Mieszanie...');
-
-    const finalSymbols = [getRandomSymbol(), getRandomSymbol(), getRandomSymbol()];
     updateSpinning(['spin', 'spin', 'spin']);
 
     const spinInterval = setInterval(() => {
       setReels(prev => prev.map((reel, i) => spinningReelsRef.current[i] === 'spin' ? getRandomSymbol().img : reel));
     }, 100);
 
-    setTimeout(() => {
-      slowDownReel(0, finalSymbols[0], [200, 300, 400, 500]);
-    }, 1200);
+    try {
+      const res = await fetch('http://localhost:8080/api/game/play', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: user.username,
+          gameName: 'Slots',
+          betAmount: numericBet
+        })
+      });
+      const data = await res.json();
 
-    setTimeout(() => {
-      slowDownReel(1, finalSymbols[1], [200, 300, 400, 500]);
-    }, 2000);
+      if (!res.ok) {
+        setKomunikat('❌ Błąd: ' + data.message);
+        clearInterval(spinInterval);
+        setIsSpinning(false);
+        updateSpinning(['stop', 'stop', 'stop']);
+        return;
+      }
 
-    setTimeout(() => {
-      slowDownReel(2, finalSymbols[2], [200, 300, 400, 500]);
-      clearInterval(spinInterval);
+      const backendReels = data.gameData.reels;
+      const finalSymbols = backendReels.map(sym => ({ img: sym }));
 
-      setTimeout(async () => {
-        const [s1, s2, s3] = finalSymbols;
-        let winAmount = 0;
-        let hasWon = false;
+      setTimeout(() => {
+        slowDownReel(0, finalSymbols[0], [200, 300, 400, 500]);
+      }, 1200);
 
-        if (s1.img === s2.img && s2.img === s3.img) {
-          winAmount = numericBet * s1.mult;
-          hasWon = true;
-          setKomunikat(`🔥 JACKPOT: +${winAmount} PKT!`);
-        } else if (s1.img === s2.img || s2.img === s3.img || s1.img === s3.img) {
-          winAmount = Math.floor(numericBet * 2.5);
-          hasWon = true;
-          setKomunikat(`✨ PARA: +${winAmount} PKT!`);
-        } else {
-          setKomunikat('Graj dalej! 🍀');
-        }
+      setTimeout(() => {
+        slowDownReel(1, finalSymbols[1], [200, 300, 400, 500]);
+      }, 2000);
 
-        try {
-          // Zapisujemy jeden konkretny rekord zakładu na koniec
-          const res = await fetch('http://localhost:8080/api/place-bet', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              username: user.username,
-              betAmount: numericBet,
-              payout: winAmount,
-              won: hasWon,
-              gameName: 'Slots'
-            })
-          });
-          const data = await res.json();
+      setTimeout(() => {
+        slowDownReel(2, finalSymbols[2], [200, 300, 400, 500]);
+        clearInterval(spinInterval);
 
-          if (res.ok && hasWon) {
-            syncPoints(data.newPoints); // Aktualizacja salda o wygraną
+        setTimeout(() => {
+          syncPoints(data.newPoints);
+
+          if (data.won) {
+            const [s1, s2, s3] = backendReels;
+            if (s1 === s2 && s2 === s3) {
+              setKomunikat(`🔥 JACKPOT: +${data.payout} PKT!`);
+            } else {
+              setKomunikat(`✨ PARA: +${data.payout} PKT!`);
+            }
+          } else {
+            setKomunikat('Graj dalej! 🍀');
           }
-        } catch {
-          console.error("Błąd synchronizacji zakładu w Slots");
-        } finally {
-          setIsSpinning(false); // Zawsze odblokuj przycisk
-        }
-      }, 1000);
-    }, 2800);
+          setIsSpinning(false);
+        }, 1000);
+      }, 2800);
+
+    } catch {
+      setKomunikat('❌ Brak połączenia z serwerem!');
+      clearInterval(spinInterval);
+      setIsSpinning(false);
+      updateSpinning(['stop', 'stop', 'stop']);
+    }
   };
 
   const cssAnimations = `

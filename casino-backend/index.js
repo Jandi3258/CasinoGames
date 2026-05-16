@@ -14,9 +14,9 @@ app.use(express.json());
 initDb();
 
 // Podłączenie modułów
-app.use('/api', authRoutes);    // /api/login, /api/register
-app.use('/api', gameRoutes);    // /api/place-bet
-app.use('/api', paymentRoutes); // /api/deposit
+app.use('/api', authRoutes);
+app.use('/api', gameRoutes);
+app.use('/api', paymentRoutes);
 
 const PORT = 8080;
 app.listen(PORT, () => console.log(`🚀 Serwer modułowy działa na porcie ${PORT}`));
