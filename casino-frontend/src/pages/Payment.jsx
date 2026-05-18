@@ -1,18 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
-const Payment = ({ user, updatePoints }) => {
+const Payment = ({ user, syncPoints }) => {
     const [packageId, setPackageId] = useState('small');
     const [cardData, setCardData] = useState({ number: '', expiry: '', cvv: '' });
 
-    const packages = {
-        small: { points: 100, cost: 10 },
-        medium: { points: 500, cost: 50 },
-        large: { points: 1000, cost: 100 },
-        p500: { points: 5000, cost: 500 },
-        p1000: { points: 10000, cost: 1000 },
-        p2500: { points: 25000, cost: 2500 },
-        xlarge: { points: 100000, cost: 10000 }
-    };
+    // Stan na pakiety z backendu (Single Source of Truth)
+    const [packages, setPackages] = useState({});
+
+    // Pobieranie pakietów po załadowaniu strony
+    useEffect(() => {
+        fetch('http://localhost:8080/api/packages')
+            .then(res => res.json())
+            .then(data => setPackages(data))
+            .catch(() => console.error('Błąd pobierania pakietów z serwera'));
+    }, []);
 
     const formatCardNumber = (value) => value.replace(/\D/g, '');
 
@@ -35,13 +36,6 @@ const Payment = ({ user, updatePoints }) => {
     const validateCvv = (cvv) => /^\d{3,4}$/.test(cvv);
 
     const handlePayment = async () => {
-        const selectedPackage = packages[packageId];
-
-        if (!selectedPackage) {
-            alert('Wybierz poprawny pakiet płatności.');
-            return;
-        }
-
         if (!cardData.number || !cardData.expiry || !cardData.cvv) {
             alert('Wypełnij wszystkie pola karty!');
             return;
@@ -63,22 +57,30 @@ const Payment = ({ user, updatePoints }) => {
         }
 
         try {
-            const res = await fetch('http://localhost:8080/api/deposit', {  
+            const res = await fetch('http://localhost:8080/api/deposit', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: user.username, packageId })
+                body: JSON.stringify({
+                    username: user.username,
+                    packageId: packageId,
+                    cardDetails: {
+                        number: formatCardNumber(cardData.number),
+                        expiry: cardData.expiry,
+                        cvv: cardData.cvv
+                    }
+                })
             });
-            
+
             const data = await res.json();
-            
-            if (res.ok) {
-                const updatedUser = { ...user, points: data.newPoints };
-                localStorage.setItem('user', JSON.stringify(updatedUser));
-                setTimeout(() => window.location.reload(), 500);
+
+            if (res.ok && data.success) {
+                syncPoints(data.newPoints);
+                alert("Konto doładowane!");
+                setCardData({ number: '', expiry: '', cvv: '' });
             } else {
-                alert('Błąd: ' + data.message);
+                alert('Błąd: ' + (data.message || 'Płatność odrzucona'));
             }
-        } catch (error) {
+        } catch {
             alert('Błąd połączenia z serwerem na http://localhost:8080');
         }
     };
@@ -94,13 +96,15 @@ const Payment = ({ user, updatePoints }) => {
                     <div style={{ marginBottom: '25px' }}>
                         <label style={{ display: 'block', marginBottom: '8px', fontSize: '1rem', fontWeight: '600', color: '#ddd' }}>Wybierz pakiet:</label>
                         <select value={packageId} onChange={(e) => setPackageId(e.target.value)} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid rgba(255, 179, 71, 0.3)', background: 'rgba(255,255,255,0.05)', color: 'white', fontSize: '1rem', boxSizing: 'border-box' }}>
-                            <option value="small">100 punktów - 10 zł</option>
-                            <option value="medium">500 punktów - 50 zł</option>
-                            <option value="large">1000 punktów - 100 zł</option>
-                            <option value="p500">5000 punktów - 500 zł</option>
-                            <option value="p1000">10000 punktów - 1000 zł</option>
-                            <option value="p2500">25000 punktów - 2500 zł</option>
-                            <option value="xlarge">100000 punktów - 10000 zł</option>
+                            {Object.keys(packages).length > 0 ? (
+                                Object.keys(packages).map((key) => (
+                                    <option key={key} value={key} style={{ color: 'black' }}>
+                                        {packages[key].points} punktów - {packages[key].cost} zł
+                                    </option>
+                                ))
+                            ) : (
+                                <option value="small" style={{ color: 'black' }}>Ładowanie pakietów...</option>
+                            )}
                         </select>
                     </div>
 

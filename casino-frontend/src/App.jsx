@@ -4,7 +4,7 @@ import './App.css';
 
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
-import Ruletka from './pages/Ruletka';
+import Roulette from './pages/Roulette.jsx';
 import Blackjack from './pages/Blackjack';
 import Slots from './pages/Slots';
 import HorseRace from './pages/HorseRace';
@@ -12,38 +12,21 @@ import Auth from './pages/Auth';
 import Payment from './pages/Payment';
 
 function App() {
-    console.log('App component rendering');
     const [loggedUser, setLoggedUser] = useState(() => {
         const savedUser = localStorage.getItem('user');
-        console.log('Loaded user from localStorage:', savedUser);
         return savedUser ? JSON.parse(savedUser) : null;
     });
 
-    const handleLogout = () => {
-        localStorage.removeItem('user');
-        setLoggedUser(null);
-    };
-
-    // Metoda dodaje określoną liczbę punktów (moze być ujemna)
-    // Przykład użycia w Ruletka.jsx
-    const updatePoints = async (amount) => {
-        const res = await fetch('http://localhost:8080/api/update-points', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: loggedUser.username, amount })
+    // Ta funkcja tylko synchronizuje stan lokalny z tym, co przyszło z serwera
+    const syncPoints = (newPoints) => {
+        setLoggedUser(prev => {
+            const updated = { ...prev, points: newPoints };
+            localStorage.setItem('user', JSON.stringify(updated));
+            return updated;
         });
-        const data = await res.json();
-        if (res.ok) {
-            const updatedUser = { ...loggedUser, points: data.newPoints };
-            setLoggedUser(updatedUser);
-            localStorage.setItem('user', JSON.stringify(updatedUser)); // Aktualizujemy też localStorage
-        }
     };
 
-    // Jeśli użytkownik NIE jest zalogowany, pokazujemy TYLKO stronę logowania
-    if (!loggedUser) {
-        return <Auth setLoggedUser={setLoggedUser} />;
-    }
+    if (!loggedUser) return <Auth setLoggedUser={setLoggedUser} />;
 
     // Jeśli JEST zalogowany, pokazujemy całe kasyno
     return (
@@ -59,7 +42,7 @@ function App() {
               overflow: 'hidden'
             }}>
                 {/* Przekazujemy dane użytkownika do Navbar, żeby mógł wyświetlić punkty */}
-                <Navbar user={loggedUser} onLogout={handleLogout} />
+                <Navbar user={loggedUser} onLogout={() => { localStorage.removeItem('user'); setLoggedUser(null); }} />
                 <main id="center" style={{
                   flex: 1,
                   overflow: 'auto',
@@ -69,11 +52,11 @@ function App() {
                 }}>
                     <Routes>
                         <Route path="/" element={<Home user={loggedUser} />} />
-                        <Route path="/ruletka" element={<Ruletka user={loggedUser} updatePoints={updatePoints}/>} />
-                        <Route path="/blackjack" element={<Blackjack user={loggedUser} updatePoints={updatePoints}/>} />
-                        <Route path="/slots" element={<Slots user={loggedUser} updatePoints={updatePoints}/>} />
-                        <Route path="/horserace" element={<HorseRace user={loggedUser} updatePoints={updatePoints}/>} />
-                        <Route path="/payment" element={<Payment user={loggedUser} updatePoints={updatePoints}/>} />
+                        <Route path="/roulette" element={<Roulette user={loggedUser} syncPoints={syncPoints}/>} />
+                        <Route path="/blackjack" element={<Blackjack user={loggedUser} syncPoints={syncPoints}/>} />
+                        <Route path="/slots" element={<Slots user={loggedUser} syncPoints={syncPoints}/>} />
+                        <Route path="/horserace" element={<HorseRace user={loggedUser} syncPoints={syncPoints}/>} />
+                        <Route path="/payment" element={<Payment user={loggedUser} syncPoints={syncPoints}/>} />
                         {/* Przekierowanie, jeśli ktoś wejdzie na nieistniejącą stronę */}
                         <Route path="*" element={<Navigate to="/" />} />
                     </Routes>

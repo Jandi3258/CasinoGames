@@ -8,7 +8,7 @@ const DEGREES_PER_SEGMENT = 360 / NUM_SEGMENTS;
 const redNumbers = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
 const blackNumbers = [2, 4, 6, 8, 10, 11, 13, 15, 17, 20, 22, 24, 26, 28, 29, 31, 33, 35];
 
-const Ruletka = ({ user, updatePoints }) => {
+const Roulette = ({ user, syncPoints }) => {
     // STANY GRY
     const [wynik, setWynik] = useState(null);
     const [betAmount, setBetAmount] = useState('');
@@ -53,7 +53,6 @@ const Ruletka = ({ user, updatePoints }) => {
         setKomunikat(`Obstawiono numer: ${val}`);
     };
 
-    // GŁÓWNA FUNKCJA LOSUJĄCA
     const spin = async () => {
         if (isSpinning) return;
 
@@ -67,64 +66,77 @@ const Ruletka = ({ user, updatePoints }) => {
             setKomunikat('❌ Wybierz kolor zakładu!');
             return;
         }
-        // WALIDACJA STAWKI (pozwalamy na puste pole, ale wtedy nie obstawiamy)
         if (betAmount === '' || betAmount === null) {
             setKomunikat('❌ Wpisz stawkę przed zagraniem!');
             return;
         }
+
         const numericBet = parseInt(betAmount, 10);
-        if (isNaN(numericBet) || numericBet < 10) {
-            setKomunikat('❌ Minimalna stawka to 10 pkt!');
-            return;
-        }
-        if (user.points < numericBet) {
-            setKomunikat('❌ Za mało punktów!');
+        if (isNaN(numericBet) || numericBet < 10 || user.points < numericBet) {
+            setKomunikat('❌ Za mało punktów lub błędna stawka!');
             return;
         }
 
         setIsSpinning(true);
         setKomunikat('🎰 Losowanie w toku...');
-        await updatePoints(-numericBet);
 
-        // OBLICZANIE WYNIKU I ROTACJI
-        const randomIndex = Math.floor(Math.random() * NUM_SEGMENTS);
-        const winningNum = W[randomIndex];
+        const gameParams = betType === 'color'
+            ? { betType, selectedColor }
+            : { betType, selectedNumber: numToBet };
 
-        // Celujemy w środek segmentu
-        const targetAngle = (randomIndex * DEGREES_PER_SEGMENT) + (DEGREES_PER_SEGMENT / 2);
-        const currentRotationNormalized = wheelRotation % 360;
-        const spins = 360 * 10;
-        const finalRotation = wheelRotation - spins - (targetAngle + currentRotationNormalized);
+        try {
+            const res = await fetch('http://localhost:8080/api/game/play', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username: user.username,
+                    gameName: 'Roulette',
+                    betAmount: numericBet,
+                    gameParams: gameParams
+                })
+            });
 
-        setWheelRotation(finalRotation);
+            const data = await res.json();
 
-        // OCZEKIWANIE NA ZAKOŃCZENIE ANIMACJI
-        setTimeout(async () => {
+            if (!res.ok) {
+                setKomunikat(`❌ Błąd: ${data.message}`);
+                setIsSpinning(false);
+                return;
+            }
+
+            // Dane wylosowane bezpiecznie na serwerze
+            const winningNum = data.gameData.winningNumber;
+            const colorWin = data.gameData.color;
+
+            // OBLICZANIE ROTACJI NA PODSTAWIE WYNIKU Z SERWERA
+            const randomIndex = W.indexOf(winningNum);
+            const targetAngle = (randomIndex * DEGREES_PER_SEGMENT) + (DEGREES_PER_SEGMENT / 2);
+            const currentRotationNormalized = wheelRotation % 360;
+            const spins = 360 * 10;
+            const finalRotation = wheelRotation - spins - (targetAngle + currentRotationNormalized);
+
+            setWheelRotation(finalRotation);
+
+            // OCZEKIWANIE NA ZAKOŃCZENIE ANIMACJI KOŁA (4 sekundy)
+            setTimeout(() => {
+                syncPoints(data.newPoints);
+                setWynik(winningNum);
+                if (data.won) {
+                    setKomunikat(`🎉 WYGRANA! Wypadło ${winningNum} (${colorWin.toUpperCase()}). +${data.payout} pkt!`);
+                } else {
+                    setKomunikat(`💀 Przegrana. Wypadło ${winningNum} (${colorWin.toUpperCase()}).`);
+                }
+
+                setIsSpinning(false);
+            }, 4000);
+
+        } catch (err) {
+            console.error("Błąd komunikacji z serwerem gier:", err);
+            setKomunikat("❌ Brak połączenia z serwerem gier!");
             setIsSpinning(false);
-            setWynik(winningNum); // Wyświetlenie wyniku w środku
-            const colorWin = getNumberColor(winningNum);
-
-            let won = false;
-            let payout = 0;
-
-            if (betType === 'color' && selectedColor === colorWin) {
-                won = true;
-                payout = numericBet * (selectedColor === 'green' ? 36 : 2);
-            } else if (betType === 'number' && parseInt(selectedNumber) === winningNum) {
-                won = true;
-                payout = numericBet * 36;
-            }
-
-            if (won) {
-                setKomunikat(`🎉 WYGRANA! Wypadło ${winningNum}. +${payout} pkt!`);
-                await updatePoints(payout);
-            } else {
-                setKomunikat(`💀 Przegrana. Wypadło ${winningNum}. Spróbuj jeszcze raz!`);
-            }
-        }, 4000);
+        }
     };
 
-    // STYLE INLINE
     const styles = {
         container: { padding: '20px', textAlign: 'center', color: 'white', background: '#0a0f1e', minHeight: '100vh',
             fontFamily: 'Arial, sans-serif' },
@@ -151,15 +163,13 @@ const Ruletka = ({ user, updatePoints }) => {
         }),
         controls: { maxWidth: '500px', margin: '0 auto', padding: '20px', background: 'rgba(255,255,255,0.05)',
             borderRadius: '15px', border: '1px solid rgba(255,215,0,0.2)' },
-        activeBetPanel: { background: 'rgba(0,0,0,0.4)', padding: '12px', borderRadius: '10px', marginBottom: '20px',
-            border: '1px solid #444', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' },
         input: { padding: '10px', background: '#111', color: 'white', border: '1px solid #444', borderRadius: '8px',
             width: '70px', textAlign: 'center', fontSize: '1rem' }
     };
 
     return (
         <div style={styles.container}>
-            <h2 style={{ letterSpacing: '2px', textTransform: 'uppercase' }}>🎡 Ruletka</h2>
+            <h2 style={{ letterSpacing: '2px', textTransform: 'uppercase' }}>🎡Roulette</h2>
             <p style={{ color: 'gold', fontSize: '1.2rem' }}>💰 Saldo: {user.points} pkt</p>
 
             {/* KOŁO RULETKI */}
@@ -201,7 +211,7 @@ const Ruletka = ({ user, updatePoints }) => {
                         type="number" min="0" max="36" placeholder="?"
                         value={selectedNumber}
                         onChange={(e) => selectNumberBet(e.target.value)}
-                        onFocus={(e) => e.target.select()} // Auto-zaznaczanie
+                        onFocus={(e) => e.target.select()}
                         style={{
                             ...styles.input,
                             borderColor: betType === 'number' ? 'gold' : '#444',
@@ -240,4 +250,4 @@ const Ruletka = ({ user, updatePoints }) => {
     );
 };
 
-export default Ruletka;
+export default Roulette;

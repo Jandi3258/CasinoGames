@@ -82,10 +82,10 @@ const Home = () => {
 
   const games = [
     { 
-      id: 'ruletka', 
+      id: 'roulette',
       icon: '🎡', 
-      name: 'Ruletka', 
-      path: '/ruletka',
+      name: 'Roulette',
+      path: '/roulette',
       background: 'linear-gradient(135deg, rgba(139, 0, 139, 0.4) 0%, rgba(75, 0, 130, 0.3) 100%)'
     },
     { 
