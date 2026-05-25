@@ -15,21 +15,27 @@ import Transactions from './pages/Transactions';
 function App() {
     const [loggedUser, setLoggedUser] = useState(() => {
         const savedUser = localStorage.getItem('user');
-        return savedUser ? JSON.parse(savedUser) : null;
+        if(!savedUser) return null;
+        let x = JSON.parse(savedUser);
+        //return x;
+        return x.token ? x : null; // dodatkowa weryfikacja, czy obiekt ma token, jeśli nie, to traktujemy jak niezalogowany
     });
 
-    // Ta funkcja tylko synchronizuje stan lokalny z tym, co przyszło z serwera
+    //debug potem usunac 
+    console.log(loggedUser);
+    console.log('App component rendered');
     const syncPoints = (newPoints) => {
         setLoggedUser(prev => {
             const updated = { ...prev, points: newPoints };
+            //delete updated.token; // usuwamy token z obiektu, żeby nie przechowywać go w stanie, ale nadal jest w localStorage
             localStorage.setItem('user', JSON.stringify(updated));
             return updated;
+
         });
     };
 
     if (!loggedUser) return <Auth setLoggedUser={setLoggedUser} />;
 
-    // Jeśli JEST zalogowany, pokazujemy całe kasyno
     return (
         <Router>
             <div className="App" style={{ 

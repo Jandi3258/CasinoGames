@@ -178,7 +178,7 @@ const Roulette = ({ user, syncPoints }) => {
             {/* KOŁO RULETKI */}
             <div style={styles.stage}>
                 <div style={styles.indicator}></div>
-                <div style={styles.center}>{isSpinning ? '?' : (wynik !== null ? wynik : '—')}</div>
+                <div style={styles.center}>{isSpinning ? ' ' : (wynik !== null ? wynik : ' ')}</div>
                 <div style={styles.wheel}>
                     {W.map((num, i) => (
                         <div key={i} style={styles.numberWrapper(i)}>{num}</div>
