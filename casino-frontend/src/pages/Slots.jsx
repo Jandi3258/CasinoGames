@@ -1,4 +1,6 @@
 import React, { useState, useMemo, useRef } from 'react';
+import wowSound from '../assets/wow.mp3';
+import faahSound from '../assets/faah.mp3';
 
 const SYMBOL_CONFIG = [
   { img: '🍒', label: 'Cherry', mult: 5, weight: 40 },
@@ -7,6 +9,8 @@ const SYMBOL_CONFIG = [
   { img: '💎', label: 'Diamond', mult: 60, weight: 10 },
   { img: '⭐', label: 'Seven', mult: 150, weight: 5 },
 ];
+
+const SYMBOLS = SYMBOL_CONFIG.map(s => s.img);
 
 const Slots = ({ user, syncPoints }) => {
   const [reels, setReels] = useState(['❓', '❓', '❓']);
@@ -30,6 +34,55 @@ const Slots = ({ user, syncPoints }) => {
   };
 
   const getRandomSymbol = () => weightedSymbols[Math.floor(Math.random() * weightedSymbols.length)];
+
+  const generateControlledOutcome = (numericBet) => {
+    const roll = Math.random() * 100;
+    
+    const CHANCE_JACKPOT = 4;  
+    const CHANCE_PAIR = 40;     
+    
+    if (roll < CHANCE_JACKPOT) {
+      const winSym = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
+      const conf = SYMBOL_CONFIG.find(s => s.img === winSym);
+      const payout = numericBet * conf.mult;
+      
+      return {
+        won: true,
+        payout: payout,
+        newPoints: user.points - numericBet + payout,
+        gameData: { reels: [winSym, winSym, winSym] }
+      };
+    } 
+    
+    else if (roll < CHANCE_JACKPOT + CHANCE_PAIR) {
+      const pairSym = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
+      const remainingSyms = SYMBOLS.filter(s => s !== pairSym);
+      const otherSym = remainingSyms[Math.floor(Math.random() * remainingSyms.length)];
+      
+      const payout = Math.floor(numericBet * 2.5);
+
+      const generatedReels = [pairSym, pairSym, otherSym].sort(() => Math.random() - 0.5);
+
+      return {
+        won: true,
+        payout: payout,
+        newPoints: user.points - numericBet + payout,
+        gameData: { reels: generatedReels }
+      };
+    } 
+    
+    else {
+      const shuffled = [...SYMBOLS].sort(() => Math.random() - 0.5);
+      const losingReels = [shuffled[0], shuffled[1], shuffled[2]];
+
+      return {
+        won: false,
+        payout: 0,
+        newPoints: user.points - numericBet,
+        gameData: { reels: losingReels }
+      };
+    }
+  };
 
   const slowDownReel = (index, finalSymbol, delays) => {
     updateSpinning(prev => {
@@ -85,24 +138,11 @@ const Slots = ({ user, syncPoints }) => {
     }, 100);
 
     try {
-      const res = await fetch('http://localhost:8080/api/game/play', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          username: user.username,
-          gameName: 'Slots',
-          betAmount: numericBet
-        })
+      const data = await new Promise((resolve) => {
+        setTimeout(() => {
+          resolve(generateControlledOutcome(numericBet));
+        }, 600);
       });
-      const data = await res.json();
-
-      if (!res.ok) {
-        setKomunikat('❌ Błąd: ' + data.message);
-        clearInterval(spinInterval);
-        setIsSpinning(false);
-        updateSpinning(['stop', 'stop', 'stop']);
-        return;
-      }
 
       const backendReels = data.gameData.reels;
       const finalSymbols = backendReels.map(sym => ({ img: sym }));
@@ -124,20 +164,32 @@ const Slots = ({ user, syncPoints }) => {
 
           if (data.won) {
             const [s1, s2, s3] = backendReels;
+            
             if (s1 === s2 && s2 === s3) {
               setKomunikat(`🔥 JACKPOT: +${data.payout} PKT!`);
-            } else {
+            } else if (s1 === s2 || s2 === s3 || s1 === s3) {
               setKomunikat(`✨ PARA: +${data.payout} PKT!`);
+            } else {
+              setKomunikat(`✨ WYGRANA: +${data.payout} PKT!`);
             }
+            
+            try {
+              const audioWin = new Audio(wowSound);
+              audioWin.play().catch(() => {});
+            } catch (e) {}
           } else {
             setKomunikat('Graj dalej! 🍀');
+            try {
+              const audio = new Audio(faahSound);
+              audio.play().catch(() => {});
+            } catch (e) {}
           }
           setIsSpinning(false);
         }, 1000);
       }, 2800);
 
     } catch {
-      setKomunikat('❌ Brak połączenia z serwerem!');
+      setKomunikat('❌ Coś poszło nie tak!');
       clearInterval(spinInterval);
       setIsSpinning(false);
       updateSpinning(['stop', 'stop', 'stop']);
@@ -189,8 +241,18 @@ const Slots = ({ user, syncPoints }) => {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <label style={{ color: '#aaa', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 'bold' }}>TWOJA STAWKA</label>
-            <input type="number" value={bet} onChange={e => setBet(e.target.value)} style={styles.input} disabled={isSpinning} />
-          </div>
+            <input type="number" min="0" value={bet} onKeyDown={e => {
+              if (['-', 'e', 'E', ',', '.'].includes(e.key)) {
+                e.preventDefault();
+              }}} onChange={e => {
+              const val = e.target.value;
+              if (val === '' || parseInt(val, 10) >= 0) {
+                setBet(val);
+              }
+            }} 
+            style={styles.input} 
+            disabled={isSpinning} 
+          /></div>
           <button style={styles.button} onClick={spin} disabled={isSpinning}>
             {isSpinning ? 'LOSOWANIE...' : 'ZAGRAJ'}
           </button>

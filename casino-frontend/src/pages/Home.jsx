@@ -114,7 +114,7 @@ const Home = () => {
   return (
     <div style={styles.container}>
       <div style={styles.header}>
-        <h1 style={styles.title}>🎰 CASINO EMPIRE 💎</h1>
+        <h1 style={styles.title}>CASINO EMPIRE</h1>
         <p style={styles.subtitle}>Wybierz swoją ulubioną grę i zarabiaj punkty!</p>
       </div>
 

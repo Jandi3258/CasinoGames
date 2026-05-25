@@ -10,6 +10,7 @@ import Slots from './pages/Slots';
 import HorseRace from './pages/HorseRace';
 import Auth from './pages/Auth';
 import Payment from './pages/Payment';
+import Transactions from './pages/Transactions';
 
 function App() {
     const [loggedUser, setLoggedUser] = useState(() => {
@@ -57,6 +58,7 @@ function App() {
                         <Route path="/slots" element={<Slots user={loggedUser} syncPoints={syncPoints}/>} />
                         <Route path="/horserace" element={<HorseRace user={loggedUser} syncPoints={syncPoints}/>} />
                         <Route path="/payment" element={<Payment user={loggedUser} syncPoints={syncPoints}/>} />
+                        <Route path="/transactions" element={<Transactions user={loggedUser} />} />
                         {/* Przekierowanie, jeśli ktoś wejdzie na nieistniejącą stronę */}
                         <Route path="*" element={<Navigate to="/" />} />
                     </Routes>

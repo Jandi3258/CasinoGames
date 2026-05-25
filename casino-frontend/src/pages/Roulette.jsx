@@ -80,6 +80,8 @@ const Roulette = ({ user, syncPoints }) => {
         setIsSpinning(true);
         setKomunikat('🎰 Losowanie w toku...');
 
+        // Brak optymistycznego odjęcia punktów — saldo zostanie zaktualizowane po wyniku z serwera.
+
         const gameParams = betType === 'color'
             ? { betType, selectedColor }
             : { betType, selectedNumber: numToBet };
@@ -119,6 +121,7 @@ const Roulette = ({ user, syncPoints }) => {
 
             // OCZEKIWANIE NA ZAKOŃCZENIE ANIMACJI KOŁA (4 sekundy)
             setTimeout(() => {
+                // Rekonsyliacja stanu — ustawiamy saldo zgodnie z serwerem
                 syncPoints(data.newPoints);
                 setWynik(winningNum);
                 if (data.won) {
@@ -169,7 +172,7 @@ const Roulette = ({ user, syncPoints }) => {
 
     return (
         <div style={styles.container}>
-            <h2 style={{ letterSpacing: '2px', textTransform: 'uppercase' }}>🎡Roulette</h2>
+            <h2 style={{ letterSpacing: '2px', textTransform: 'uppercase' }}>Roulette</h2>
             <p style={{ color: 'gold', fontSize: '1.2rem' }}>💰 Saldo: {user.points} pkt</p>
 
             {/* KOŁO RULETKI */}
