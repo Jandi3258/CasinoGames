@@ -1,8 +1,6 @@
 const WHEEL = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
 const RED_NUMBERS = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
 
-const COLOR_WIN_RATE = process.env.RULETTE_COLOR_WIN_RATE ? Number(process.env.RULETTE_COLOR_WIN_RATE) : 0.6;
-
 function evaluateRoulette(betAmount, params) {
     const { betType, selectedColor, selectedNumber } = params;
 
@@ -17,14 +15,8 @@ function evaluateRoulette(betAmount, params) {
     let payout = 0;
 
     if (betType === 'color' && selectedColor === colorWin) {
-        const pass = Math.random() < COLOR_WIN_RATE;
-        if (pass) {
-            won = true;
-            payout = betAmount * (selectedColor === 'green' ? 36 : 2);
-        } else {
-            won = false;
-            payout = 0;
-        }
+        won = true;
+        payout = betAmount * (selectedColor === 'green' ? 36 : 2);
     } else if (betType === 'number' && parseInt(selectedNumber) === winningNum) {
         won = true;
         payout = betAmount * 36;
