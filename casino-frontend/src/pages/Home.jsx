@@ -114,7 +114,18 @@ const Home = () => {
   return (
     <div style={styles.container}>
       <div style={styles.header}>
-        <h1 style={styles.title}>CASINO EMPIRE</h1>
+             <h1 style={{ 
+        letterSpacing: '4px', 
+        textTransform: 'uppercase', 
+        fontFamily: '"Arial Black", "Montserrat", "Impact", sans-serif',
+        fontWeight: '900',
+        fontSize: '3rem',
+        margin: '20px 0',
+        color: '#fdd835', 
+        textShadow: '0 0 10px rgba(253, 216, 53, 0.6), 0 0 25px rgba(253, 216, 53, 0.4), 0 0 40px rgba(253, 216, 53, 0.2)'
+    }}>
+        CASINO EMPIRE
+    </h1>
         <p style={styles.subtitle}>Wybierz swoją ulubioną grę i zarabiaj punkty!</p>
       </div>
 

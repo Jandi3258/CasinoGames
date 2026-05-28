@@ -97,8 +97,19 @@ const Payment = ({ user, syncPoints }) => {
     return (
         <div style={{ padding: '60px 30px', minHeight: '100vh', background: 'radial-gradient(circle at top right, #2a1f4d 0%, #0a0f1e 50%, #000 100%)', color: 'white' }}>
             <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-                <h2 style={{ fontSize: '2.5rem', fontWeight: '900', marginBottom: '20px', background: 'linear-gradient(135deg, #ffb347, #ffcc33)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', textAlign: 'center' }}>System Płatności</h2>
-
+                        <h2 style={{ 
+                fontSize: '2.5rem', 
+                marginBottom: '25px', 
+                letterSpacing: '4px',
+                textTransform: 'uppercase', 
+                fontFamily: '"Arial Black", "Montserrat", "Impact", sans-serif',
+                fontWeight: '900',
+                color: '#fdd835', 
+                textShadow: '0 0 10px rgba(253, 216, 53, 0.6), 0 0 25px rgba(253, 216, 53, 0.4), 0 0 40px rgba(253, 216, 53, 0.2)',
+                textAlign: 'center'
+            }}>
+             System Płatności
+                </h2>
                 <div style={{ padding: '40px', borderRadius: '20px', background: 'rgba(40, 45, 70, 0.4)', border: '2px solid rgba(255, 179, 71, 0.3)', backdropFilter: 'blur(10px)', boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }}>
                     <p style={{ fontSize: '1.3rem', fontWeight: '600', marginBottom: '30px', color: '#ffcc33' }}>💰 Saldo: {user.points} pkt</p>
 

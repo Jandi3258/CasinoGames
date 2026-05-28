@@ -160,7 +160,18 @@ const Roulette = ({ user, syncPoints }) => {
 
     return (
         <div style={styles.container}>
-            <h2 style={{ letterSpacing: '2px', textTransform: 'uppercase' }}>Roulette</h2>
+            <h2 style={{ 
+    letterSpacing: '3px', 
+    textTransform: 'uppercase', 
+    fontFamily: '"Arial Black", "Montserrat", "Impact", sans-serif',
+    fontWeight: '900',
+    fontSize: '2.5rem',
+    margin: '10px 0 20px 0',
+    color: '#fdd835', 
+    textShadow: '0 0 10px rgba(253, 216, 53, 0.6), 0 0 25px rgba(253, 216, 53, 0.4), 0 0 40px rgba(253, 216, 53, 0.2)' // Efekt świecenia
+}}>
+    Roulette
+</h2>
             <p style={{ color: 'gold', fontSize: '1.2rem' }}>💰 Saldo: {user.points} pkt</p>
 
             {/* KOŁO RULETKI */}
