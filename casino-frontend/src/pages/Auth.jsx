@@ -34,8 +34,10 @@ export default function Auth({ setLoggedUser }) {
             if (res.ok) {
                 // Upewniamy się, że nie zapisujemy hasła w localStorage
                 const { password: _, ...safeUser } = data.user;
-                setLoggedUser(safeUser);
-                localStorage.setItem('user', JSON.stringify(safeUser));
+                // Jeśli serwer zwrócił token, zachowujemy go wraz z użytkownikiem
+                const userToStore = { ...safeUser, token: data.token };
+                setLoggedUser(userToStore);
+                localStorage.setItem('user', JSON.stringify(userToStore));
             } else {
                 setError(data.message || 'Wystąpił błąd.');
             }

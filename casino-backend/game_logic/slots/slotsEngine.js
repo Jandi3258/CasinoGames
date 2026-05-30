@@ -20,7 +20,10 @@ function evaluateSlots(betAmount, params) {
     if (s1.img === s2.img && s2.img === s3.img) {
         payout = betAmount * s1.mult;
         won = true;
-    } else if (s1.img === s2.img || s2.img === s3.img || s1.img === s3.img) {
+    } else if (
+        (s1.img === s2.img || s2.img === s3.img || s1.img === s3.img)
+        && Math.random() < 0.1 // Only 10% chance to win on a pair
+    ) {
         payout = Math.floor(betAmount * 2.5);
         won = true;
     }

@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../config/db');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const JWT_SECRET = process.env.JWT_SECRET || 'dev_jwt_secret_change_this';
 
 router.post('/register', async (req, res) => {
     const { username, password } = req.body;
@@ -26,7 +28,8 @@ router.post('/login', async (req, res) => {
             const match = await bcrypt.compare(password, user.password);
             if (match) {
                 const { password: _, ...safeUser } = user;
-                return res.json({ user: safeUser });
+                const token = jwt.sign({ id: safeUser.id, username: safeUser.username }, JWT_SECRET, { expiresIn: '7d' });
+                return res.json({ user: safeUser, token });
             }
         }
         res.status(401).json({ message: "Błędny login lub hasło." });

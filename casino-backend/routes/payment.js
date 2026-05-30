@@ -62,4 +62,47 @@ router.post('/deposit', async (req, res) => {
     }
 });
 
+// Pobierz historię depozytów dla użytkownika (paginated)
+const transactionService = require('../services/transactionService');
+
+router.get('/deposits/:username', async (req, res) => {
+    const { username } = req.params;
+    const limit = parseInt(req.query.limit, 10);
+    const offset = parseInt(req.query.offset, 10);
+
+    if (!username || typeof username !== 'string' || username.length > 100) {
+        return res.status(400).json({ message: 'Niepoprawny parametr username' });
+    }
+
+    try {
+        const userCheck = await pool.query('SELECT id FROM users WHERE username = $1', [username]);
+        if (userCheck.rows.length === 0) {
+            return res.status(404).json({ message: 'Użytkownik nie odnaleziony' });
+        }
+        const userId = userCheck.rows[0].id;
+
+        const { rows, total } = await transactionService.getDepositsByUserId(pool, userId, { limit, offset });
+
+        res.json({ success: true, deposits: rows, total });
+    } catch (err) {
+        console.error('Błąd pobierania historii depozytów:', err);
+        res.status(500).json({ message: 'Błąd serwera podczas pobierania historii' });
+    }
+});
+
+const authMiddleware = require('../middleware/auth');
+router.get('/transactions', authMiddleware, async (req, res) => {
+    const userId = req.user && req.user.id;
+    const limit = parseInt(req.query.limit, 10);
+    const offset = parseInt(req.query.offset, 10);
+
+    try {
+        const { rows, total } = await transactionService.getDepositsByUserId(pool, userId, { limit, offset });
+        res.json({ success: true, deposits: rows, total });
+    } catch (err) {
+        console.error('Błąd pobierania transakcji dla zalogowanego użytkownika:', err);
+        res.status(500).json({ message: 'Błąd serwera podczas pobierania transakcji' });
+    }
+});
+
 module.exports = router;

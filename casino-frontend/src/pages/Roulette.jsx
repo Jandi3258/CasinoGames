@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 
-// Oficjalna sekwencja numerów na kole europejskim
 const W = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
 const NUM_SEGMENTS = 37;
 const DEGREES_PER_SEGMENT = 360 / NUM_SEGMENTS;
@@ -9,19 +8,16 @@ const redNumbers = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 3
 const blackNumbers = [2, 4, 6, 8, 10, 11, 13, 15, 17, 20, 22, 24, 26, 28, 29, 31, 33, 35];
 
 const Roulette = ({ user, syncPoints }) => {
-    // STANY GRY
     const [wynik, setWynik] = useState(null);
     const [betAmount, setBetAmount] = useState('');
     const [isSpinning, setIsSpinning] = useState(false);
     const [komunikat, setKomunikat] = useState('Wybierz typ zakładu i kręć!');
     const [wheelRotation, setWheelRotation] = useState(0);
 
-    // STANY ZAKŁADU
-    const [betType, setBetType] = useState('color'); // 'color' lub 'number'
+    const [betType, setBetType] = useState('color'); 
     const [selectedColor, setSelectedColor] = useState(null);
-    const [selectedNumber, setSelectedNumber] = useState(''); // Domyślnie puste
+    const [selectedNumber, setSelectedNumber] = useState(''); 
 
-    // LOGIKA POMOCNICZA
     const getNumberColor = (num) => {
         if (num === 0) return 'green';
         if (redNumbers.includes(num)) return 'red';
@@ -29,26 +25,24 @@ const Roulette = ({ user, syncPoints }) => {
         return 'gray';
     };
 
-    // Dynamiczny gradient dopasowany do tablicy W
     const generatedGradient = W.map((num, i) => {
         const color = getNumberColor(num);
         const hex = color === 'green' ? '#0a0' : color === 'red' ? '#d00' : '#111';
         return `${hex} ${i * DEGREES_PER_SEGMENT}deg ${(i + 1) * DEGREES_PER_SEGMENT}deg`;
     }).join(', ');
 
-    // OBSŁUGA WYBORU ZAKŁADU
     const selectColorBet = (color) => {
         if (isSpinning) return;
         setBetType('color');
         setSelectedColor(color);
-        setSelectedNumber(''); // Czyścimy numer przy wyborze koloru
+        setSelectedNumber(''); 
         setKomunikat(`Obstawiono kolor: ${color === 'red' ? 'Czerwony' : color === 'black' ? 'Czarny' : 'Zielony'}`);
     };
 
     const selectNumberBet = (val) => {
         if (isSpinning) return;
         setBetType('number');
-        setSelectedColor(null); // Czyścimy kolor przy wyborze numeru
+        setSelectedColor(null); 
         setSelectedNumber(val);
         setKomunikat(`Obstawiono numer: ${val}`);
     };
@@ -56,7 +50,6 @@ const Roulette = ({ user, syncPoints }) => {
     const spin = async () => {
         if (isSpinning) return;
 
-        // WALIDACJA
         const numToBet = parseInt(selectedNumber);
         if (betType === 'number' && (selectedNumber === '' || isNaN(numToBet) || numToBet < 0 || numToBet > 36)) {
             setKomunikat('❌ Wpisz poprawny numer (0-36)!');
@@ -104,11 +97,10 @@ const Roulette = ({ user, syncPoints }) => {
                 return;
             }
 
-            // Dane wylosowane bezpiecznie na serwerze
+        
             const winningNum = data.gameData.winningNumber;
             const colorWin = data.gameData.color;
 
-            // OBLICZANIE ROTACJI NA PODSTAWIE WYNIKU Z SERWERA
             const randomIndex = W.indexOf(winningNum);
             const targetAngle = (randomIndex * DEGREES_PER_SEGMENT) + (DEGREES_PER_SEGMENT / 2);
             const currentRotationNormalized = wheelRotation % 360;
@@ -117,7 +109,6 @@ const Roulette = ({ user, syncPoints }) => {
 
             setWheelRotation(finalRotation);
 
-            // OCZEKIWANIE NA ZAKOŃCZENIE ANIMACJI KOŁA (4 sekundy)
             setTimeout(() => {
                 syncPoints(data.newPoints);
                 setWynik(winningNum);
@@ -169,13 +160,24 @@ const Roulette = ({ user, syncPoints }) => {
 
     return (
         <div style={styles.container}>
-            <h2 style={{ letterSpacing: '2px', textTransform: 'uppercase' }}>🎡Roulette</h2>
+            <h2 style={{ 
+    letterSpacing: '3px', 
+    textTransform: 'uppercase', 
+    fontFamily: '"Arial Black", "Montserrat", "Impact", sans-serif',
+    fontWeight: '900',
+    fontSize: '2.5rem',
+    margin: '10px 0 20px 0',
+    color: '#fdd835', 
+    textShadow: '0 0 10px rgba(253, 216, 53, 0.6), 0 0 25px rgba(253, 216, 53, 0.4), 0 0 40px rgba(253, 216, 53, 0.2)' // Efekt świecenia
+}}>
+    Roulette
+</h2>
             <p style={{ color: 'gold', fontSize: '1.2rem' }}>💰 Saldo: {user.points} pkt</p>
 
             {/* KOŁO RULETKI */}
             <div style={styles.stage}>
                 <div style={styles.indicator}></div>
-                <div style={styles.center}>{isSpinning ? '?' : (wynik !== null ? wynik : '—')}</div>
+                <div style={styles.center}>{isSpinning ? '' : (wynik !== null ? wynik : '')}</div>
                 <div style={styles.wheel}>
                     {W.map((num, i) => (
                         <div key={i} style={styles.numberWrapper(i)}>{num}</div>
@@ -183,7 +185,7 @@ const Roulette = ({ user, syncPoints }) => {
                 </div>
             </div>
 
-            {/* PANEL STEROWANIA */}
+            
             <div style={styles.controls}>
                 {/* PRZYCISKI KOLORÓW */}
                 <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
@@ -204,7 +206,6 @@ const Roulette = ({ user, syncPoints }) => {
                     }}>Zielone</button>
                 </div>
 
-                {/* OBSTAWIANIE NUMERU */}
                 <div style={{ marginBottom: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
                     <span>Postaw na numer (0-36):</span>
                     <input
@@ -220,7 +221,6 @@ const Roulette = ({ user, syncPoints }) => {
                     />
                 </div>
 
-                {/* STAWKA */}
                 <div style={{ marginBottom: '20px' }}>
                     <span>Stawka (min. 10):</span>
                     <input
@@ -232,7 +232,6 @@ const Roulette = ({ user, syncPoints }) => {
                     />
                 </div>
 
-                {/* PRZYCISK STARTU */}
                 <button
                     onClick={spin} disabled={isSpinning || betAmount === ''}
                     style={{
