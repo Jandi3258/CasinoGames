@@ -13,25 +13,38 @@ import Payment from './pages/Payment';
 import Transactions from './pages/Transactions';
 
 function App() {
+    // 1. INICJALIZACJA: Czytamy wszystko z jednego klucza 'user'
     const [loggedUser, setLoggedUser] = useState(() => {
         const savedUser = localStorage.getItem('user');
-        if(!savedUser) return null;
-        let x = JSON.parse(savedUser);
-        //return x;
-        return x.token ? x : null; // dodatkowa weryfikacja, czy obiekt ma token, jeśli nie, to traktujemy jak niezalogowany
+        if (!savedUser) return null;
+        
+        const parsedUser = JSON.parse(savedUser);
+        // Sprawdzamy, czy obiekt istnieje i czy ma token
+        return parsedUser.token ? parsedUser : null; 
     });
 
-    //debug potem usunac 
-    console.log(loggedUser);
-    console.log('App component rendered');
+    // 2. AKTUALIZACJA PUNKTÓW: Bezpiecznie nadpisuje tylko punkty, reszta (w tym token) zostaje
     const syncPoints = (newPoints) => {
         setLoggedUser(prev => {
-            const updated = { ...prev, points: newPoints };
-            //delete updated.token; // usuwamy token z obiektu, żeby nie przechowywać go w stanie, ale nadal jest w localStorage
+            if (!prev) return null; // Zabezpieczenie
+            
+            // ...prev kopiuje WSZYSTKIE dotychczasowe dane (id, username, token)
+            // po czym nadpisujemy tylko pole 'points'
+            const updated = { 
+                ...prev, 
+                points: newPoints 
+            };
+            
+            // Zapisujemy cały, kompletny obiekt z powrotem
             localStorage.setItem('user', JSON.stringify(updated));
             return updated;
-
         });
+    };
+
+    // 3. WYLOGOWANIE: Usuwamy tylko jeden klucz
+    const handleLogout = () => {
+        localStorage.removeItem('user');
+        setLoggedUser(null);
     };
 
     if (!loggedUser) return <Auth setLoggedUser={setLoggedUser} />;
@@ -48,15 +61,8 @@ function App() {
               padding: 0,
               overflow: 'hidden'
             }}>
-                {/* Przekazujemy dane użytkownika do Navbar, żeby mógł wyświetlić punkty */}
-                <Navbar user={loggedUser} onLogout={() => { localStorage.removeItem('user'); setLoggedUser(null); }} />
-                <main id="center" style={{
-                  flex: 1,
-                  overflow: 'auto',
-                  width: '100%',
-                  margin: 0,
-                  padding: 0
-                }}>
+                <Navbar user={loggedUser} onLogout={handleLogout} />
+                <main id="center" style={{ flex: 1, overflow: 'auto', width: '100%', margin: 0, padding: 0 }}>
                     <Routes>
                         <Route path="/" element={<Home user={loggedUser} />} />
                         <Route path="/roulette" element={<Roulette user={loggedUser} syncPoints={syncPoints}/>} />
@@ -65,7 +71,6 @@ function App() {
                         <Route path="/horserace" element={<HorseRace user={loggedUser} syncPoints={syncPoints}/>} />
                         <Route path="/payment" element={<Payment user={loggedUser} syncPoints={syncPoints}/>} />
                         <Route path="/transactions" element={<Transactions user={loggedUser} />} />
-                        {/* Przekierowanie, jeśli ktoś wejdzie na nieistniejącą stronę */}
                         <Route path="*" element={<Navigate to="/" />} />
                     </Routes>
                 </main>

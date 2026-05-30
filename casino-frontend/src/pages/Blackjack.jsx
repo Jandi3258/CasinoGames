@@ -14,13 +14,14 @@ const Blackjack = ({ user, syncPoints }) => {
       textAlign: 'center'
     },
     title: {
-      fontSize: '2.5rem',
+      letterSpacing: '3px', 
+      textTransform: 'uppercase', 
+      fontFamily: '"Arial Black", "Montserrat", "Impact", sans-serif',
       fontWeight: '900',
-      marginBottom: '20px',
-      background: 'linear-gradient(135deg, #ffb347, #ffcc33)',
-      WebkitBackgroundClip: 'text',
-      WebkitTextFillColor: 'transparent',
-      backgroundClip: 'text'
+      fontSize: '2.5rem',
+      margin: '10px 0 20px 0',
+      color: '#fdd835', 
+      textShadow: '0 0 10px rgba(253, 216, 53, 0.6), 0 0 25px rgba(253, 216, 53, 0.4), 0 0 40px rgba(253, 216, 53, 0.2)' // Efekt świecenia
     },
     card: {
       maxWidth: '600px',
@@ -42,13 +43,13 @@ const Blackjack = ({ user, syncPoints }) => {
   return (
     <div style={styles.container}>
       <div style={styles.header}>
-        <h2 style={styles.title}>🃏 Blackjack</h2>
+        <h2 style={styles.title}>Blackjack</h2>
       </div>
       <div style={styles.card}>
-        <p style={styles.text}>Dobierz kartę lub spasuj!</p>
+        <p style={styles.text}>Tu bedzie podpiety i bedzie klasa</p>
       </div>
     </div>
   );
 };
 
-export default Blackjack; 
+export default Blackjack;
