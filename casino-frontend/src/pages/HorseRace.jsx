@@ -113,7 +113,7 @@ const Sparkline = ({ history }) => {
 	return (
 		<svg viewBox="0 0 100 32" className="sparkline-chart" aria-hidden="true">
 			<defs>
-				<linearGradient id="sparkline-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+				<linearGradient id="sparkline-gradient" x1="0" y1="0" x2="100" y2="0" gradientUnits="userSpaceOnUse">
 					<stop offset="0%" stopColor="#7C3AED" />
 					<stop offset="100%" stopColor="#38BDF8" />
 				</linearGradient>
@@ -335,21 +335,12 @@ const ResultsPanel = ({ raceOutcome, betSlip, horses }) => {
 	);
 };
 
-const ProgressTracker = ({ phase, elapsedRaceTime, horses, raceOutcome, raceNumber, selectedHorseId }) => {
+const ProgressTracker = ({ phase, horses, sharedProgressRef }) => {
 	const [positions, setPositions] = useState([]);
-	const trackerMaxRef = useRef({});
-	const prevPhaseRef = useRef(phase);
-	const initialElapsedRef = useRef(elapsedRaceTime);
-	const startTimeRef = useRef(null);
-
-	useEffect(() => {
-		initialElapsedRef.current = elapsedRaceTime;
-	}, [elapsedRaceTime]);
 
 	useEffect(() => {
 		if (phase === 'betting' || phase === 'results') {
-			trackerMaxRef.current = {};
-			setPositions(horses.map((h, i) => ({ horse: h, progress: 0, rank: i + 1 })));
+			setPositions(horses.map((h) => ({ horse: h, progress: 0 })));
 		}
 	}, [phase, horses]);
 
@@ -357,46 +348,19 @@ const ProgressTracker = ({ phase, elapsedRaceTime, horses, raceOutcome, raceNumb
 		if (phase !== 'racing' && phase !== 'photo-finish') return;
 
 		let rafId;
-
-		if (prevPhaseRef.current !== phase) {
-			startTimeRef.current = null;
-			prevPhaseRef.current = phase;
-		}
-
-		const tick = (now) => {
-			if (startTimeRef.current === null) {
-				startTimeRef.current = now - (initialElapsedRef.current * 1000);
-				trackerMaxRef.current = {};
-			}
-
-			const elapsed = (now - startTimeRef.current) / 1000;
-			const currentElapsed = Math.min(elapsed, 30);
-
-			const winnerId = raceOutcome?.winnerId || selectedHorseId || 'h1';
-			const intendedOrder = getRaceOrder(winnerId, horses);
-
-			const newPositions = horses.map((horse, stableIndex) => {
-				const orderIndex = (raceOutcome && raceOutcome.order)
-					? raceOutcome.order.findIndex(h => h.id === horse.id)
-					: intendedOrder.findIndex(h => h.id === horse.id);
-
-				const progress = getHorseProgress(stableIndex, orderIndex, currentElapsed, trackerMaxRef, horse.id, raceNumber);
+		const tick = () => {
+			const newPositions = horses.map((horse) => {
+				const progress = sharedProgressRef.current[horse.id] || 0;
 				return { horse, progress };
 			});
-
-			const sorted = [...newPositions].sort((a, b) => b.progress - a.progress);
-			const positionsWithRank = newPositions.map(pos => ({
-				...pos,
-				rank: sorted.findIndex(s => s.horse.id === pos.horse.id) + 1
-			}));
-
-			setPositions(positionsWithRank);
+			
+			setPositions(newPositions);
 			rafId = requestAnimationFrame(tick);
 		};
 
 		rafId = requestAnimationFrame(tick);
 		return () => cancelAnimationFrame(rafId);
-	}, [phase, horses, raceOutcome, raceNumber, selectedHorseId]);
+	}, [phase, horses, sharedProgressRef]);
 
 	return (
 		<div className="progress-tracker rounded-[2rem] border border-zinc-800 bg-[#020617]/80 p-4 shadow-2xl text-center">
@@ -409,12 +373,12 @@ const ProgressTracker = ({ phase, elapsedRaceTime, horses, raceOutcome, raceNumb
 				{positions.map((item, index) => (
 					<div
 						key={item.horse.id}
-						className="progress-dot absolute -translate-x-1/2 -translate-y-0 top-1/2 rounded-full border border-white/20 bg-white text-xs text-zinc-950 transition-all duration-75"
+						className="progress-dot absolute -translate-x-1/2 -translate-y-0 top-1/2 rounded-full border border-white/20 bg-white text-xs text-zinc-950"
 						style={{ left: `${Math.min(item.progress * 100, 100)}%`, width: '16px', height: '16px' }}
 						title={`${item.horse.name}`}
 					>
 						<span className="absolute inset-0 flex items-center justify-center font-semibold text-xs text-slate-950">
-							{item.rank}
+							{item.horse.id.replace('h', '')}
 						</span>
 					</div>
 				))}
@@ -477,6 +441,7 @@ const HorseRacing = ({ user, syncPoints }) => {
 	const [winningAmount, setWinningAmount] = useState(0);
 	const [raceNumber, setRaceNumber] = useState(0);
 	const [bettingError, setBettingError] = useState(null); 
+	const sharedProgressRef = useRef({});
 
 	
 	useEffect(() => {
@@ -718,6 +683,7 @@ const HorseRacing = ({ user, syncPoints }) => {
 									winnerId={raceOutcome?.winnerId || selectedHorseId || 'h1'}
 									initialElapsed={elapsedRaceTime}
 									raceOutcome={raceOutcome} raceNumber={raceNumber} 
+									sharedProgressRef={sharedProgressRef}
 								/>
 								{phase === 'photo-finish' && (
 										<div className="photo-finish-banner absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-center">
@@ -729,11 +695,8 @@ const HorseRacing = ({ user, syncPoints }) => {
 						{phase === 'results' && <ResultsPanel raceOutcome={raceOutcome} raceNumber={raceNumber} betSlip={betSlip} horses={horses} />}
 						<ProgressTracker 
 							phase={phase} 
-							elapsedRaceTime={elapsedRaceTime} 
 							horses={horses} 
-							raceOutcome={raceOutcome} 
-							raceNumber={raceNumber} 
-							selectedHorseId={selectedHorseId} 
+							sharedProgressRef={sharedProgressRef}
 						/>
 					</section>
 

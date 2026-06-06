@@ -275,13 +275,14 @@ const drawHorse = (ctx, x, y, laneHeight, horse, horseIndex, progress) => {
 
 
 
-const RaceTrack = ({ gameState, horses = DEFAULT_HORSES, initialElapsed = 0, raceOutcome = null, raceNumber = 0, winnerId }) => {
+const RaceTrack = ({ gameState, horses = DEFAULT_HORSES, initialElapsed = 0, raceOutcome = null, raceNumber = 0, winnerId, sharedProgressRef }) => {
   const canvasRef = useRef(null);
   const animationRef = useRef(null);
   const startTimeRef = useRef(null);
   const elapsedRef = useRef(0);
   const maxPanProgressRef = useRef(0); 
-  const horseMaxProgressRef = useRef({}); 
+  const fallbackProgressRef = useRef({}); 
+  const horseMaxProgressRef = sharedProgressRef || fallbackProgressRef;
 
   const prevGameStateRef = useRef(gameState);
   const intendedOrder = useMemo(() => getRaceOrder(winnerId, horses), [winnerId, horses]);
