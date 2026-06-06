@@ -147,7 +147,7 @@ wss.on('connection', (ws) => {
 });
 //==========================
 const BLACKJACK_PORT = 6583;
-server.listen(BLACKJACK_PORT, () => console.log(`Blackjack na porcie ${PORT}`));
+server.listen(BLACKJACK_PORT, () => console.log(`Blackjack na porcie ${BLACKJACK_PORT}`));
 // Podłączenie modułów
 app.use('/api', authRoutes);
 app.use('/api', gameRoutes);

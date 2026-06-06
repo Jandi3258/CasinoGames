@@ -9,6 +9,9 @@ class GameSession {
     this.currentBet = 0;
     this.deck = new Deck();
     this.playerHand = [];
+    this.handID = 1;
+    this.queuedHands = [];
+    this.resolvedHands = [];
     this.dealerHand = [];
     this.dealerHiddenCard = 0;
     this.gameActive = false;
@@ -22,6 +25,18 @@ class GameSession {
     });
 
     this.playerTokens = result.newPoints;
+  }
+
+  async cashOut(payout) {
+    this.playerTokens += payout;
+    await this.alterPlayerTokens({ username: this.username, amount: payout });
+  }
+
+  async bet(amount) {
+    this.currentBet = amount;
+    this.playerTokens -= amount;
+    await this.alterPlayerTokens({ username: this.username, amount: -amount });
+    return amount;
   }
 
   drawCard() {
@@ -42,12 +57,33 @@ class GameSession {
     }
   }
 
+  handToPoints( cards ) {
+    let total = 0;
+    let aces = 0;
+    cards.forEach(card => {
+        let val = this.idToPoints(card);
+        total += val.value;
+        aces += (val.temp / 10);
+    });
+
+    while ( aces > 0 ) {
+        if ( total <= 11 ) {
+            total += 10;
+            aces -= 1;
+        } else break;
+    }
+    return total;
+  }
+
   async startNewGame(betAmount) {
     const res = await this.alterPlayerTokens({ username: this.username, amount: -betAmount });
     if (res && res.success) this.playerTokens = res.newPoints;
 
     this.currentBet = betAmount;
+    this.handID = 1;
     this.playerHand = [];
+    this.queuedHands = [];
+    this.resolvedHands = [];
     this.playerPoints = 0;
     this.playerTempPoints = 0;
     this.dealerHand = [];
@@ -123,7 +159,7 @@ class GameSession {
   dealerPlayTurn() {
     const newCards = [];
     if (!this.isPlayerBust())
-      while (this.getDealerPoints() < 17) {
+      while ( this.getDealerPoints() < 17 ) {
         const card = this.deck.drawCard();
         this.dealerHand.push(card);
         newCards.push(this.idToSprite(card));
@@ -139,36 +175,82 @@ class GameSession {
     return this.getDealerPoints() > 21;
   }
 
+  async evaluateBlackjack() { 
+    if ( this.getPlayerPoints() < 21 ) return null;
+    
+    let result = {};
+    result['revealedDealerCard'] = this.idToSprite(this.dealerHiddenCard);
+    result['dealerScore'] = this.getDealerPoints();
+
+    if ( result.dealerScore < 21 ) {
+      result['payout'] = Math.floor( this.currentBet * (3/2) );
+      result['statusMessage'] = "Blackjack! Wygrywasz!";
+    }
+    else {
+      result['payout'] = this.currentBet;
+      result['statusMessage'] = "Remis!";
+    }
+    this.cashOut(result['payout']);
+    result['newTotal'] = this.playerTokens;
+    return result;
+  }
+
   async determineWinner() {
     const playerScore = this.getPlayerPoints();
     const dealerScore = this.getDealerPoints();
 
     if (playerScore > 21) {
-      return { winner: 'DEALER', message: 'Player bust! Dealer wins.', payout: 0 };
+      return { winner: 'DEALER', message: 'Przebiłeś! Krupier wygrywa.', payout: 0 };
     }
 
     if (dealerScore > 21) {
       const payout = this.currentBet * 2;
-      await this.alterPlayerTokens({ username: this.username, amount: payout });
-      this.playerTokens += payout;
-      return { winner: 'PLAYER', message: 'Dealer bust! You win!', payout };
+      this.cashOut(payout);
+      return { winner: 'PLAYER', message: 'Krupier przebił! Wygrywasz!', payout };
     }
 
     if (playerScore > dealerScore) {
       const payout = this.currentBet * 2;
-      await this.alterPlayerTokens({ username: this.username, amount: payout });
-      this.playerTokens += payout;
-      return { winner: 'PLAYER', message: 'You win!', payout };
+      this.cashOut(payout);
+      return { winner: 'PLAYER', message: 'Wygrywasz!', payout };
     }
 
     if (dealerScore > playerScore) {
-      return { winner: 'DEALER', message: 'Dealer wins!', payout: 0 };
+      return { winner: 'DEALER', message: 'Krupier wygrywa!', payout: 0 };
     }
 
     const payout = this.currentBet;
-    await this.alterPlayerTokens({ username: this.username, amount: payout });
-    this.playerTokens += payout;
-    return { winner: 'PUSH', message: 'Push! It\'s a tie.', payout };
+    this.cashOut(payout);
+    return { winner: 'PUSH', message: 'Remis.', payout };
+  }
+
+  getResult(hand_id, hand_bet, hand_cards) {
+    const playerScore = this.handToPoints(hand_cards);
+    const dealerScore = this.getDealerPoints();
+    let payout = hand_bet;
+    let message = 'Remis';
+    console.log('P: ', playerScore, ', D: ', dealerScore);
+    if (playerScore > 21) {
+      message = 'Przebiłeś! Krupier wygrywa.';
+      payout = 0;
+    }
+    else
+    if (dealerScore > 21) {
+      message = 'Krupier przebił! Wygrywasz!';
+      payout = hand_bet * 2;
+    }
+    else
+    if (playerScore > dealerScore) {
+      message = 'Wygrywasz!';
+      payout = hand_bet * 2;
+    }
+    else
+    if (dealerScore > playerScore) {
+      message = 'Krupier wygrywa!'; 
+      payout = 0;
+    }
+    
+    return {h_handID: hand_id, h_payout: payout, h_statusMessage: message};
   }
 
   endGame() {
@@ -190,12 +272,12 @@ class GameSession {
           const wager = Number(betAmount);
 
           if (!Number.isFinite(wager) || wager <= 0) {
-            response = { action: 'ERROR', message: 'Invalid bet amount' };
+            response = { action: 'ERROR', message: 'Niepoprawna ilość zakładu.' };
             break;
           }
 
           if (wager > this.playerTokens) {
-            response = { action: 'ERROR', message: 'Bet exceeds available currency' };
+            response = { action: 'ERROR', message: 'Brak żetonów.' };
             break;
           }
 
@@ -211,6 +293,7 @@ class GameSession {
             currency: this.playerTokens,
             playerTempScore: 0,
             dealerTempScore: 0,
+            blackjack: await this.evaluateBlackjack(), // revealedDealerCard, dealerScore, payout, statusMessage, newTotal
           };
           break;
         }
@@ -248,6 +331,89 @@ class GameSession {
           break;
         }
 
+        case 'SPLIT': {
+          if (!this.gameActive) {
+            response = { action: 'ERROR', message: 'No active game' };
+            break;
+          }
+
+          if (this.alterPlayerTokens({username: this.username, amount: 0}) < this.currentBet) {
+            response = { action: 'ERROR', message: 'Brak żetonów na tą akcję' };
+            break;
+          }
+          this.playerTokens -= this.currentBet;
+          this.alterPlayerTokens({username: this.username, amount: -this.currentBet});
+
+          this.queuedHands.push({
+            id: this.handID + this.queuedHands.length + 1,
+            bet: this.currentBet,
+            cards: [this.playerHand.pop()],
+          });
+
+          let drawnCard = this.drawCard();
+          this.playerHit(drawnCard);
+
+          response = {
+            action: 'SPLIT',
+            currency: this.playerTokens,
+            currentBet: this.currentBet,
+            card: this.idToSprite(drawnCard),
+          }
+          break;
+        }
+        
+        case 'DOUBLE-DOWN': {
+          if (!this.gameActive) {
+            response = { action: 'ERROR', message: 'No active game' };
+            break;
+          }
+
+          if (this.alterPlayerTokens({username: this.username, amount: 0}) < this.currentBet) {
+            response = { action: 'ERROR', message: 'Brak żetonów na tą akcję' };
+            break;
+          }
+          this.playerTokens -= this.currentBet;
+          this.alterPlayerTokens({username: this.username, amount: -this.currentBet});
+          this.currentBet = this.currentBet * 2;
+          
+          let drawnCard = this.drawCard();
+          this.playerHit(drawnCard);
+          this.playerStood = true;
+
+          response = {
+            action: 'DOUBLE-DOWN',
+            card: this.idToSprite(drawnCard),
+            playerScore: this.getPlayerPoints(),
+            dealerScore: this.idToPoints(this.dealerHand[0]).value + this.idToPoints(this.dealerHand[0]).temp,
+            dealerTempScore: 0,
+            playerTempScore: 0,
+            playerBust: this.isPlayerBust(),
+            playerStood: this.playerStood,
+            betAmount: this.currentBet,
+            currency: this.playerTokens,
+          }
+
+          break;
+        }
+
+        case 'SURRENDER': {
+          if ( this.resolvedHands.length > 0 || this.queuedHands.length > 0 || this.playerHand.length > 2 ) {
+            response = { action: 'ERROR', message: 'Can\'t surrender' }; 
+          }
+          else {
+            let recoveredTokens = Math.floor(this.currentBet / 2);
+            this.cashOut(recoveredTokens);
+            response = {
+              action: 'SURRENDER',
+              revealedDealerCard: this.idToSprite(this.dealerHiddenCard),
+              payout: recoveredTokens,
+              newTotal: this.playerTokens,
+            }
+            this.endGame();
+          }
+          break;
+        }
+
         default:
           response = { action: 'ERROR', message: 'Unknown action' };
       }
@@ -258,24 +424,69 @@ class GameSession {
         ws.send(JSON.stringify(response));
       }
 
-      if ( this.playerStood && this.gameActive ) {
-        const newCards = this.dealerPlayTurn();
-        const result = await this.determineWinner();
-
-        response = {
-          action: 'DEALER-TURN',
-          revealedDealerCard: this.idToSprite(this.dealerHiddenCard),
-          newCards,
-          dealerScore: this.getDealerPoints(),
-          statusMessage: result.message,
-          gameEnded: true,
-          payout: result.payout,
-          newTotal: this.playerTokens,
-        };
-
-        if (debug_print) console.log(response); // DEBUG
-        ws.send(JSON.stringify(response));
+      if ( response.blackjack ) {
         this.endGame();
+      } else
+      if ( this.playerStood && this.gameActive && response.action !== 'SURRENDER' ) {
+        if ( this.queuedHands.length > 0 ) {
+          this.playerStood = false;
+
+          let drawnCard = this.drawCard();
+          this.resolvedHands.push({
+            id: this.handID,
+            bet: this.currentBet,
+            cards: this.playerHand,
+          });
+
+          let nextHand = this.queuedHands.find(hand => hand.id === (this.handID + 1));
+          [this.handID, this.currentBet, this.playerHand] = [nextHand.id, nextHand.bet, nextHand.cards];
+          this.queuedHands = this.queuedHands.filter(hand => hand.id !== this.handID);
+
+          this.playerHit(drawnCard);
+
+          response = {
+            action: 'NEXT-HAND',
+            card: this.idToSprite(drawnCard),
+          };
+          if (debug_print) console.log(response); // DEBUG
+          ws.send(JSON.stringify(response));
+        } 
+        else {
+          this.resolvedHands.push({
+            id: this.handID,
+            bet: this.currentBet,
+            cards: this.playerHand,
+          });
+          const newCards = this.dealerPlayTurn();
+          let totalWin = 0; 
+          if (debug_print) console.log(this.handID, this.currentBet, this.playerHand); // DEBUG
+          let result = [];
+
+          this.resolvedHands.forEach(({id, bet, cards}) => {
+            console.log("running for: ", id, bet, cards);
+            let h_res = this.getResult(id, bet, cards);
+            totalWin += h_res.h_payout;
+            result.push(h_res);
+          });
+
+          console.log("Total Winning is: ", totalWin);
+          await this.cashOut(totalWin);
+
+          response = {
+            action: 'DEALER-TURN',
+            revealedDealerCard: this.idToSprite(this.dealerHiddenCard),
+            newCards,
+            dealerScore: this.getDealerPoints(),
+            statusMessage: result.message,
+            gameEnded: true,
+            payout: result.payout,
+            newTotal: this.playerTokens,
+            results: result,
+          };
+          if (debug_print) console.log(response); // DEBUG
+          ws.send(JSON.stringify(response));
+          this.endGame();
+        }
       }
     } catch (error) {
       console.error('Error handling action:', error);

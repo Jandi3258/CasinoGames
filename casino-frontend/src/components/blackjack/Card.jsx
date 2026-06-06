@@ -2,7 +2,7 @@ import './Card.css';
 
 const IMG_SOURCE = '/card-map.png';
 const IMG_WIDTH = 8716;
-const IMG_HEIGHT = 4172;
+const IMG_HEIGHT = 3984;
 const COLUMNS = 13;
 const ROWS = 4;
 
@@ -22,7 +22,9 @@ function Card({
     className = '',
     rotation = 0,
     style = {},
-    flipVertically = false
+    flipVertically = false,
+    backOverlaySrc = '',
+    backOverlayStyle = {}
 }) {
     const column = card_id;
     const row = color_id;
@@ -90,6 +92,14 @@ function Card({
                         style={backStyle}
                         alt="card back"
                     />
+                    {backOverlaySrc ? (
+                        <img
+                            className="back card-face__overlay"
+                            src={backOverlaySrc}
+                            style={{ ...backStyle, ...backOverlayStyle }}
+                            alt="card back overlay"
+                        />
+                    ) : null}
                 </div>
             </div>
         </div>

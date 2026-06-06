@@ -48,6 +48,7 @@ function getCardRotation(card, index) {
 }
 
 function toSpriteCard(card) {
+    console.log('spriting: ', card)
     if (!card) {
         return null;
     }
@@ -69,33 +70,54 @@ function toSpriteCard(card) {
     };
 }
 
-function Hand({ cards = [], flip = false }) {
+function Hand({ cards = [], flip = false, cardOverlap = -12, className = '', children = null }) {
+    console.log(`displaying ${flip ? 'dealer' : 'player'} hand: `, cards);
     return (
-        <div className={`Hand${flip ? ' Hand--flipped' : ''}`}>
+        <div
+            className={`Hand${flip ? ' Hand--flipped' : ''}${className ? ` ${className}` : ''}`}
+            style={{ '--card-overlap': `${cardOverlap}px` }}
+        >
             {cards.map((card, index) => {
-                const spriteCard = toSpriteCard(card);
+                const spriteCard = toSpriteCard(card); console.log('sprited: ', spriteCard);
                 const isFlipped = typeof card?.flipped === 'boolean' ? card.flipped : !spriteCard;
+                const key = card?.uid || `${card?.suit || card?.color_id || 'hidden'}-${card?.value || card?.card_id || 'back'}-${index}`;
 
                 return (
                     <motion.div
-                        className={spriteCard ? '' : 'face-down'}
-                        initial={{opacity: 0.8, y: -20}}
-                        animate={{opacity: 1, y: 0}}
-                        transition={{duration: 0.3, ease: "easeOut"}}
+                        key={key}
+                        className="Hand__cardShell"
+                        layout="position"
+                        transition={{
+                            layout: { duration: 0.3, ease: 'easeOut' },
+                            duration: 0.3,
+                            ease: 'easeOut',
+                        }}
                     >
-                    <Card
-                        key={`${card?.suit || card?.color_id || 'hidden'}-${card?.value || card?.card_id || 'back'}-${index}`}
-                        card_id={spriteCard?.card_id}
-                        color_id={spriteCard?.color_id}
-                        size={CARDS_SIZE}
-                        flipped={isFlipped}
-                        rotation={getCardRotation(card, index)}
-                        style={{ zIndex: index }}
-                        flipVertically={flip}
-                    />
+                        <motion.div
+                            className={spriteCard ? 'card' : 'card face-down'}
+                            initial={{ opacity: 0, y: -20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.3, ease: 'easeOut' }}
+                        >
+                        <Card
+                            card_id={spriteCard?.card_id}
+                            color_id={spriteCard?.color_id}
+                            size={CARDS_SIZE}
+                            flipped={isFlipped}
+                            rotation={getCardRotation(card, index)}
+                            style={{ zIndex: index }}
+                            flipVertically={flip}
+                        />
+                        </motion.div>
                     </motion.div>
                 );
             })}
+
+            {children != null ? (
+                <div className="Hand__bet">
+                    {children}
+                </div>
+            ) : null}
         </div>
     );
 }

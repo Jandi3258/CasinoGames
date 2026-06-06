@@ -10,9 +10,8 @@
   width: 100%;
   height: 100%;
 
-  border: 2px solid rgba(100, 100, 100, 1);
+  /*border: 2px solid rgba(100, 100, 100, 1);*/
   border-radius: 10%;
-  /* throwing out the border (for now at least) bc of image funkery */
   position: relative;
   transform-style: preserve-3d;
   transition: transform 0.5s ease-out;
@@ -47,7 +46,18 @@
   object-fit: fill;
 }
 
+.card-face--back .back {
+  position: absolute;
+  inset: 0;
+}
+
+.card-face__overlay {
+  z-index: 2;
+}
+
 
 .card-face .front {
-    display: block;
+  display: block;
+  /*image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;*/
 }
