@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 
@@ -39,7 +39,7 @@ function App() {
             localStorage.setItem('user', JSON.stringify(updated));
             return updated;
         });
-    };
+    }, []);
 
     // 3. WYLOGOWANIE: Usuwamy tylko jeden klucz
     const handleLogout = () => {
