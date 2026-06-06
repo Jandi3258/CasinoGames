@@ -126,7 +126,7 @@ const Home = () => {
     }}>
         CASINO EMPIRE
     </h1>
-        <p style={styles.subtitle}>Wybierz swoją ulubioną grę i zarabiaj punkty!</p>
+        <p style={styles.subtitle}>90% niedoszłych milionerów odchodzi od kasyna o 1 bet za wcześnie! Nie popełnij tego błędu.</p>
       </div>
 
       <div style={styles.gamesGrid}>
