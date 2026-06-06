@@ -24,7 +24,7 @@ function App() {
     });
 
     // 2. AKTUALIZACJA PUNKTÓW: Bezpiecznie nadpisuje tylko punkty, reszta (w tym token) zostaje
-    const syncPoints = (newPoints) => {
+    const syncPoints = useCallback((newPoints) => {
         setLoggedUser(prev => {
             if (!prev) return null; // Zabezpieczenie
             

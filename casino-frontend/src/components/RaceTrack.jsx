@@ -53,7 +53,7 @@ const normalizeProgress = (value, min, max) => {
   return (value - min) / (max - min);
 };
 
-const getHorseProgress = (horseIndex, orderIndex, elapsedSeconds, horseMaxProgressRef = null, raceNumber = 0) => {
+const getHorseProgress = (horseStableIndex, orderIndex, elapsedSeconds, horseMaxProgressRef = null, horseId = null, raceNumber = 0) => {
   const finishTime = getFinishTimeForPlacement(orderIndex);
   const t = elapsedSeconds;
   const T = finishTime;
@@ -62,9 +62,9 @@ const getHorseProgress = (horseIndex, orderIndex, elapsedSeconds, horseMaxProgre
   
   
   const waves = [
-    { c: 0.35, k: 1, phi: hash((horseIndex + raceNumber * 100) * 1.1) * Math.PI * 2 },
-    { c: 0.20, k: 2, phi: hash((horseIndex + raceNumber * 100) * 2.2) * Math.PI * 2 },
-    { c: 0.15, k: 3, phi: hash((horseIndex + raceNumber * 100) * 3.3) * Math.PI * 2 },
+    { c: 0.35, k: 1, phi: hash((horseStableIndex + raceNumber * 100) * 1.1) * Math.PI * 2 },
+    { c: 0.20, k: 2, phi: hash((horseStableIndex + raceNumber * 100) * 2.2) * Math.PI * 2 },
+    { c: 0.15, k: 3, phi: hash((horseStableIndex + raceNumber * 100) * 3.3) * Math.PI * 2 },
   ];
 
   let progress = normalizedTime;
@@ -82,10 +82,10 @@ const getHorseProgress = (horseIndex, orderIndex, elapsedSeconds, horseMaxProgre
   
   let finalProgress = Math.max(0, progress);
 
-  if (horseMaxProgressRef) {
-    const prevProgress = horseMaxProgressRef.current[horseIndex]?.progress || 0;
+  if (horseMaxProgressRef && horseId) {
+    const prevProgress = horseMaxProgressRef.current[horseId] || 0;
     finalProgress = Math.max(finalProgress, prevProgress); 
-    horseMaxProgressRef.current[horseIndex] = { progress: finalProgress };
+    horseMaxProgressRef.current[horseId] = finalProgress;
   }
   
   return finalProgress;
@@ -275,13 +275,16 @@ const drawHorse = (ctx, x, y, laneHeight, horse, horseIndex, progress) => {
 
 
 
-const RaceTrack = ({ gameState, horses = DEFAULT_HORSES, initialElapsed = 0, raceOutcome = null, raceNumber = 0 }) => {
+const RaceTrack = ({ gameState, horses = DEFAULT_HORSES, initialElapsed = 0, raceOutcome = null, raceNumber = 0, winnerId }) => {
   const canvasRef = useRef(null);
   const animationRef = useRef(null);
   const startTimeRef = useRef(null);
   const elapsedRef = useRef(0);
   const maxPanProgressRef = useRef(0); 
   const horseMaxProgressRef = useRef({}); 
+
+  const prevGameStateRef = useRef(gameState);
+  const intendedOrder = useMemo(() => getRaceOrder(winnerId, horses), [winnerId, horses]);
 
   
 
@@ -295,19 +298,17 @@ const RaceTrack = ({ gameState, horses = DEFAULT_HORSES, initialElapsed = 0, rac
     const trackWidth = finishX - startX;
 
     
-    const getActualOrderIndex = (horseId, defaultIndex) => {
+    const getActualOrderIndex = (horseId) => {
       if (raceOutcome && raceOutcome.order) {
         return raceOutcome.order.findIndex(h => h.id === horseId);
       }
-      return defaultIndex; 
+      return intendedOrder.findIndex(h => h.id === horseId);
     };
 
     const leadingHorseProgress = Math.max(...horses.map((horse, index) => {
-      const actualOrderIndex = getActualOrderIndex(horse.id, index); 
-      const currentProgress = getHorseProgress(index, actualOrderIndex, elapsedSeconds, horseMaxProgressRef, raceNumber);
-      
-      horseMaxProgressRef.current[horse.id] = Math.max(horseMaxProgressRef.current[horse.id] || 0, currentProgress);
-      return horseMaxProgressRef.current[horse.id];
+      const actualOrderIndex = getActualOrderIndex(horse.id); 
+      const currentProgress = getHorseProgress(index, actualOrderIndex, elapsedSeconds, horseMaxProgressRef, horse.id, raceNumber);
+      return currentProgress;
     }));
 
     
@@ -335,12 +336,11 @@ const RaceTrack = ({ gameState, horses = DEFAULT_HORSES, initialElapsed = 0, rac
     ctx.save();
     horses.forEach((horse, index) => {
       const laneY = TRACK_PADDING_TOP + index * laneHeight;
-      
 
-      
-      const actualOrderIndex = getActualOrderIndex(horse.id, index); 
-      const x = startX + (horseMaxProgressRef.current[horse.id] || 0) * trackWidth;
-      drawHorse(ctx, x, laneY, laneHeight, horse, actualOrderIndex, horseMaxProgressRef.current[horse.id]);
+      const actualOrderIndex = getActualOrderIndex(horse.id); 
+      const progress = horseMaxProgressRef.current[horse.id] || 0;
+      const x = startX + progress * trackWidth;
+      drawHorse(ctx, x, laneY, laneHeight, horse, actualOrderIndex, progress);
     });
     ctx.restore();
     
@@ -408,6 +408,12 @@ const RaceTrack = ({ gameState, horses = DEFAULT_HORSES, initialElapsed = 0, rac
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     let rafId;
+
+    // Resetuj zegar, jeśli zmieniła się faza (np. z racing na photo-finish)
+    if (prevGameStateRef.current !== gameState) {
+      startTimeRef.current = null;
+      prevGameStateRef.current = gameState;
+    }
 
     const tick = (time) => {
       if (!startTimeRef.current) {

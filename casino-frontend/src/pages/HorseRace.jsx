@@ -74,14 +74,16 @@ const resultToScore = (result) => {
 };
 
 const buildSparklinePath = (history) => {
-	const values = history.map((result) => 7 - resultToScore(result));
 	const width = 100;
 	const height = 32;
-	const step = width / (values.length - 1);
-	const points = values.map((value, index) => ({
-		x: index * step,
-		y: (value / 5) * (height - 8) + 4,
-	}));
+	const step = width / (history.length - 1);
+	const points = history.map((result, index) => {
+		const rank = resultToScore(result);
+		return {
+			x: index * step,
+			y: ((rank - 1) / 5) * (height - 8) + 4,
+		};
+	});
 	return points
 		.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`)
 		.join(' ');
@@ -96,21 +98,13 @@ const HorseIcon = ({ color, size = 24 }) => (
 	<svg
 		width={size}
 		height={size}
-		viewBox="0 0 24 24"
-		fill={color} 
-		stroke="none" 
+		viewBox="-2 0 45 35"
+		fill={color}
+		stroke="none"
 	>
-		
-		<circle cx="8" cy="8" r="3" />
-		
-		<path d="M10 10 L12 6 L14 8 L13 12 Z" />
-		
-		<path d="M12 12 Q16 11 18 14 L17 18 Q16 20 12 18 Q8 16 7 14 Z" />
-		
-		<path d="M14 18 L13 22 L11 22 L12 18 Z" />
-		<path d="M17 18 L16 22 L14 22 L15 18 Z" />
-		
-		<path d="M18 14 Q20 15 21 18 L19 17 Z" />
+		<path d="M38 8 L43 11 L40 15 L33 18 L34 22 L39 32 L35 34 L28 23 L16 23 L6 34 L2 32 L10 20 L4 14 L-2 16 L0 12 L4 10 L12 10 L24 12 L30 4 L31 0 L34 4 L37 5 Z" />
+		<circle cx="37" cy="9" r="1.5" fill="white" />
+		<circle cx="37.5" cy="9" r="0.8" fill="black" />
 	</svg>
 );
 
@@ -150,12 +144,9 @@ const HorseCard = ({ horse, selected, hovered, onSelect, onHover }) => {
 			onClick={() => onSelect(horse.id)}
 		>
 			<div className="flex flex-col items-center justify-center gap-1">
-				<div className="flex items-center gap-1">
-					<HorseIcon color={horse.color} size={24} />
-					<div className="text-center">
-						<p className="text-xs uppercase tracking-[0.15em] text-zinc-500">Koń</p>
-						<p className="text-lg font-bold text-amber-300 leading-tight">{horse.name}</p>
-					</div>
+				<div className="flex items-center gap-2">
+					<HorseIcon color={horse.color} size={32} />
+					<p className="text-lg font-bold text-amber-300 leading-tight">{horse.name}</p>
 				</div>
 				<span
 					className="rounded-full px-3 py-1 text-base font-bold"
@@ -204,14 +195,17 @@ const BetSlip = ({ selectedHorse, stake, setStake, onPlaceBet, potentialPayout, 
 		) : (
 		<div className="space-y-3">
 			<div className="rounded-xl bg-zinc-900 p-3">
-				<p className="text-sm uppercase tracking-[0.25em] text-zinc-400">🐎 Wybrany koń</p>
-				<p className="pt-2 text-xl font-bold text-amber-300 text-center">
-					{selectedHorse ? selectedHorse.name : 'Wybierz konia'}
-				</p>
+				<p className="text-sm uppercase tracking-[0.25em] text-zinc-400">Wybrany koń</p>
+				<div className="flex items-center justify-center gap-2 pt-2">
+					{selectedHorse && <HorseIcon color={selectedHorse.color} size={28} />}
+					<p className="text-xl font-bold text-amber-300 text-center">
+						{selectedHorse ? selectedHorse.name : 'Wybierz konia'}
+					</p>
+				</div>
 				<p className="text-sm text-zinc-400">Kurs: {selectedHorse ? selectedHorse.odds.toFixed(1) : '-'}</p>
 			</div>
 			<label className="block text-sm text-zinc-300 text-center">
-				Stawka (monety)
+				Stawka (punkty)
 				<input
 					type="number"
 					min="1"
@@ -325,11 +319,11 @@ const ResultsPanel = ({ raceOutcome, betSlip, horses }) => {
 					<p className="text-base uppercase tracking-[0.3em] text-zinc-500">Rozliczenie zakładu</p>
 					{betSlip ? (
 						<div className="mt-4 space-y-3 text-white text-lg">
-							<p>Postawione: {stakeValue.toFixed(2)} monet</p>
+							<p>Postawione: {stakeValue.toFixed(2)} punktów</p>
 							<p>Wybrany koń: {getHorseById(betSlip.horseId, horses)?.name}</p>
 							<p>Wynik: {won ? 'Wygrana' : 'Przegrana'}</p>
 							<p className="text-2xl font-semibold text-emerald-300">
-								{won ? `Wypłata: ${raceOutcome.payout.toFixed(2)} monet` : 'Brak wypłaty'}
+								{won ? `Wypłata: ${raceOutcome.payout.toFixed(2)} punktów` : 'Brak wypłaty'}
 							</p>
 						</div>
 					) : (
@@ -341,29 +335,93 @@ const ResultsPanel = ({ raceOutcome, betSlip, horses }) => {
 	);
 };
 
-const ProgressTracker = ({ positions }) => (
-	<div className="progress-tracker rounded-[2rem] border border-zinc-800 bg-[#020617]/80 p-4 shadow-2xl text-center">
-		<div className="mb-3 flex items-center justify-between text-base text-zinc-400">
-			<span>Przegląd toru na żywo</span>
-			<span>{positions.length} koni</span>
+const ProgressTracker = ({ phase, elapsedRaceTime, horses, raceOutcome, raceNumber, selectedHorseId }) => {
+	const [positions, setPositions] = useState([]);
+	const trackerMaxRef = useRef({});
+	const prevPhaseRef = useRef(phase);
+	const initialElapsedRef = useRef(elapsedRaceTime);
+	const startTimeRef = useRef(null);
+
+	useEffect(() => {
+		initialElapsedRef.current = elapsedRaceTime;
+	}, [elapsedRaceTime]);
+
+	useEffect(() => {
+		if (phase === 'betting' || phase === 'results') {
+			trackerMaxRef.current = {};
+			setPositions(horses.map((h, i) => ({ horse: h, progress: 0, rank: i + 1 })));
+		}
+	}, [phase, horses]);
+
+	useEffect(() => {
+		if (phase !== 'racing' && phase !== 'photo-finish') return;
+
+		let rafId;
+
+		if (prevPhaseRef.current !== phase) {
+			startTimeRef.current = null;
+			prevPhaseRef.current = phase;
+		}
+
+		const tick = (now) => {
+			if (startTimeRef.current === null) {
+				startTimeRef.current = now - (initialElapsedRef.current * 1000);
+				trackerMaxRef.current = {};
+			}
+
+			const elapsed = (now - startTimeRef.current) / 1000;
+			const currentElapsed = Math.min(elapsed, 30);
+
+			const winnerId = raceOutcome?.winnerId || selectedHorseId || 'h1';
+			const intendedOrder = getRaceOrder(winnerId, horses);
+
+			const newPositions = horses.map((horse, stableIndex) => {
+				const orderIndex = (raceOutcome && raceOutcome.order)
+					? raceOutcome.order.findIndex(h => h.id === horse.id)
+					: intendedOrder.findIndex(h => h.id === horse.id);
+
+				const progress = getHorseProgress(stableIndex, orderIndex, currentElapsed, trackerMaxRef, horse.id, raceNumber);
+				return { horse, progress };
+			});
+
+			const sorted = [...newPositions].sort((a, b) => b.progress - a.progress);
+			const positionsWithRank = newPositions.map(pos => ({
+				...pos,
+				rank: sorted.findIndex(s => s.horse.id === pos.horse.id) + 1
+			}));
+
+			setPositions(positionsWithRank);
+			rafId = requestAnimationFrame(tick);
+		};
+
+		rafId = requestAnimationFrame(tick);
+		return () => cancelAnimationFrame(rafId);
+	}, [phase, horses, raceOutcome, raceNumber, selectedHorseId]);
+
+	return (
+		<div className="progress-tracker rounded-[2rem] border border-zinc-800 bg-[#020617]/80 p-4 shadow-2xl text-center">
+			<div className="mb-3 flex items-center justify-between text-base text-zinc-400">
+				<span>Przegląd toru na żywo</span>
+				<span>{horses.length} koni</span>
+			</div>
+			<div className="relative h-4 overflow-hidden rounded-full bg-zinc-900/50">
+				<div className="absolute inset-y-0 left-0 w-full rounded-full bg-gradient-to-r from-amber-500/30 via-fuchsia-500/20 to-sky-500/10" />
+				{positions.map((item, index) => (
+					<div
+						key={item.horse.id}
+						className="progress-dot absolute -translate-x-1/2 -translate-y-0 top-1/2 rounded-full border border-white/20 bg-white text-xs text-zinc-950 transition-all duration-75"
+						style={{ left: `${Math.min(item.progress * 100, 100)}%`, width: '16px', height: '16px' }}
+						title={`${item.horse.name}`}
+					>
+						<span className="absolute inset-0 flex items-center justify-center font-semibold text-xs text-slate-950">
+							{item.rank}
+						</span>
+					</div>
+				))}
+			</div>
 		</div>
-		<div className="relative h-4 overflow-hidden rounded-full bg">
-			<div className="absolute inset-y-0 left-0 w-full rounded-full bg-gradient-to-r from-amber-500/30 via-fuchsia-500/20 to-sky-500/10" />
-			{positions.map((item, index) => (
-				<div
-					key={item.horse.id}
-					className="progress-dot absolute -translate-x-1/2 rounded-full border border-white/20 bg-white text-xs text-zinc-950"
-					style={{ left: `${Math.min(item.progress * 100, 100)}%`, width: '22px', height: '22px' }}
-					title={`${item.horse.name}`}
-				>
-					<span className="absolute inset-0 flex items-center justify-center font-semibold text-xs text-slate-950">
-						{index + 1}
-					</span>
-				</div>
-			))}
-		</div>
-	</div>
-);
+	);
+};
 
 const ConfettiOverlay = ({ active, amount }) => {
 	const particles = Array.from({ length: 22 }, (_, index) => ({
@@ -392,7 +450,7 @@ const ConfettiOverlay = ({ active, amount }) => {
 				/>
 			))}
 			<div className="confetti-message">
-				<span className="confetti-text text-3xl font-bold">+{amount.toFixed(0)} Credits</span>
+				<span className="confetti-text text-3xl font-bold">+{amount.toFixed(2)} Credits</span>
 			</div>
 		</div>
 	);
@@ -451,17 +509,10 @@ const HorseRacing = ({ user, syncPoints }) => {
 
 	const elapsedRaceTime = useMemo(() => {
 		if (phase === 'racing') return phaseDurations.racing - timer;
-		if (phase === 'photo-finish' || phase === 'results') return phaseDurations.racing;
+		if (phase === 'photo-finish') return 27.0; // Moment przecięcia mety przez zwycięzcę
+		if (phase === 'results') return 30.0;
 		return 0;
 	}, [phase, timer]);
-
-	const racePositions = useMemo(() => {
-		const order = getRaceOrder(raceOutcome?.winnerId || selectedHorseId || 'h1', horses);
-		return order.map((horse, orderIndex) => ({
-			horse,
-			progress: (phase === 'betting' || !phase) ? 0 : getHorseProgress(orderIndex, orderIndex, elapsedRaceTime, null, raceNumber),
-		}));
-	}, [raceOutcome, selectedHorseId, phase, elapsedRaceTime, raceNumber, horses]);
 
 	const syncPointsRef = useRef(syncPoints);
 	useEffect(() => {
@@ -607,16 +658,27 @@ const HorseRacing = ({ user, syncPoints }) => {
 			<div className="mx-auto w-full max-w-[1400px] space-y-4">
 				<ConfettiOverlay active={confettiActive} amount={winningAmount} />
 			<header className="rounded-[2rem] border border-zinc-800 bg-[#020617] p-4 shadow-2xl">
-				<div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-					<div className="w-full text-center md:text-left">
-						<h1 className="text-4xl md:text-5xl font-extrabold text-amber-300">🏇 Wirtualne Wyścigi Konne</h1>
-						<p className="mt-1 max-w-2xl mx-auto md:mx-0 text-base md:text-lg text-amber-400">
+				<div className="flex flex-col gap-4 items-center">
+					<div className="w-full text-center">
+						<h2 style={{ 
+							fontSize: '2.5rem', 
+							marginBottom: '25px', 
+							letterSpacing: '4px',
+							textTransform: 'uppercase', 
+							fontFamily: '"Arial Black", "Montserrat", "Impact", sans-serif',
+							fontWeight: '900',
+							color: '#fdd835', 
+							textShadow: '0 0 10px rgba(253, 216, 53, 0.6), 0 0 25px rgba(253, 216, 53, 0.4), 0 0 40px rgba(253, 216, 53, 0.2)'
+						}}>
+							WYŚCIGI KONNE
+						</h2>
+						<p className="mt-1 max-w-2xl mx-auto text-base md:text-lg text-amber-400">
 									Obstaw wyścig #{raceNumber}. Obserwuj przebieg wyścigu w tle i przygotuj kolejny zakład.
 							</p>
 						</div>
-						<div className="flex flex-wrap items-center justify-center gap-4 mt-4 md:mt-0 w-full md:w-auto">
+						<div className="flex flex-wrap items-center justify-center gap-4 w-full">
 							<div className="rounded-full bg-zinc-900 px-6 py-2 text-lg font-bold uppercase tracking-wider text-green-300 text-center">
-								💰 Saldo: {user.points.toFixed(2)} monet
+								💰 Saldo: {user.points.toFixed(2)} punktów
 							</div>
 							<div className="rounded-full bg-zinc-900 px-6 py-2 text-lg font-bold uppercase tracking-wider text-zinc-300 text-center">
 								🏁 Wyścig #{raceNumber} • {phaseLabels[phase]}
@@ -665,7 +727,14 @@ const HorseRacing = ({ user, syncPoints }) => {
 							</div>
 						)}
 						{phase === 'results' && <ResultsPanel raceOutcome={raceOutcome} raceNumber={raceNumber} betSlip={betSlip} horses={horses} />}
-						<ProgressTracker positions={racePositions} />
+						<ProgressTracker 
+							phase={phase} 
+							elapsedRaceTime={elapsedRaceTime} 
+							horses={horses} 
+							raceOutcome={raceOutcome} 
+							raceNumber={raceNumber} 
+							selectedHorseId={selectedHorseId} 
+						/>
 					</section>
 
 					<aside className="space-y-4">
