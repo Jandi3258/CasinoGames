@@ -24,7 +24,7 @@ const horses = [
   },
   {
     id: 'h4',
-    name: 'Koń Jurka',
+    name: 'Szlachetny Filip',
     odds: 5.6,
     color: '#0F766E',
     history: ['3rd', '4th', '2nd', '5th', '3rd'],
