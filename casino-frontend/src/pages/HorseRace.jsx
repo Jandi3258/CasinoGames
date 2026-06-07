@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
-import RaceTrack, { getHorseProgress, getRaceOrder } from '../components/RaceTrack';
+import RaceTrack, { getRaceOrder } from '../components/RaceTrack';
 
 const defaultHorses = [
 	{
@@ -370,7 +370,7 @@ const ProgressTracker = ({ phase, horses, sharedProgressRef }) => {
 			</div>
 			<div className="relative h-4 overflow-hidden rounded-full bg-zinc-900/50">
 				<div className="absolute inset-y-0 left-0 w-full rounded-full bg-gradient-to-r from-amber-500/30 via-fuchsia-500/20 to-sky-500/10" />
-				{positions.map((item, index) => (
+				{positions.map((item) => (
 					<div
 						key={item.horse.id}
 						className="progress-dot absolute -translate-x-1/2 -translate-y-0 top-1/2 rounded-full border border-white/20 bg-white text-xs text-zinc-950"
@@ -423,18 +423,10 @@ const ConfettiOverlay = ({ active, amount }) => {
 const HorseRacing = ({ user, syncPoints }) => {
   const [horses, setHorses] = useState(defaultHorses);
   const [phase, setPhase] = useState('betting');
-  const [backgroundPhase, setBackgroundPhase] = useState('betting');
   const [timer, setTimer] = useState(phaseDurations.betting);
-  const [backgroundTimer, setBackgroundTimer] = useState(phaseDurations.betting);
   const [selectedHorseId, setSelectedHorseId] = useState(null);
 	const [stake, setStake] = useState('25');
-	const [betSlip, setBetSlip] = useState(() => {
-		try {
-			return JSON.parse(localStorage.getItem('currentBetSlip')) || null;
-		} catch {
-			return null;
-		}
-	});
+	const [betSlip, setBetSlip] = useState(null);
 	const [raceOutcome, setRaceOutcome] = useState(null);
 	const [hoveredHorseId, setHoveredHorseId] = useState(null);
 	const [confettiActive, setConfettiActive] = useState(false);
@@ -442,11 +434,6 @@ const HorseRacing = ({ user, syncPoints }) => {
 	const [raceNumber, setRaceNumber] = useState(0);
 	const [bettingError, setBettingError] = useState(null); 
 	const sharedProgressRef = useRef({});
-
-	
-	useEffect(() => {
-		setPhase(backgroundPhase);
-	}, [backgroundPhase]);
 
 	const selectedHorse = useMemo(() => getHorseById(selectedHorseId, horses), [selectedHorseId, horses]);
 
@@ -500,6 +487,7 @@ const HorseRacing = ({ user, syncPoints }) => {
 			setPhase(data.raceState.phase);
 			setTimer(data.raceState.timer);
 			setRaceNumber(data.raceState.raceNumber);
+				const raceHorses = data.raceState.horses || defaultHorses;
 				if (data.raceState.horses) {
 					setHorses(data.raceState.horses);
 				}
@@ -509,17 +497,39 @@ const HorseRacing = ({ user, syncPoints }) => {
 				syncPointsRef.current(data.raceState.userBalance);
 			}
 
+			if (data.raceState.userBet) {
+				const serverBet = {
+					horseId: data.raceState.userBet.horseId,
+					stake: Number(data.raceState.userBet.stake),
+					odds: Number(data.raceState.userBet.odds),
+				};
+				setBetSlip(serverBet);
+				setSelectedHorseId(serverBet.horseId);
+				setStake(String(serverBet.stake));
+				setBettingError(null);
+				try {
+					localStorage.setItem('currentBetSlip', JSON.stringify({
+						...serverBet,
+						raceNumber: data.raceState.raceNumber,
+						username,
+					}));
+				} catch (e) {
+					console.error('Failed to save bet slip to local storage', e);
+				}
+			} else if (data.raceState.phase === 'betting') {
+				setBetSlip(null);
+				localStorage.removeItem('currentBetSlip');
+			}
+
 			if (data.raceState.outcome) {
 					setRaceOutcome({
 						winnerId: data.raceState.outcome.winnerId,
-						order: getRaceOrder(data.raceState.outcome.winnerId, data.raceState.horses || horses),
+						order: getRaceOrder(data.raceState.outcome.winnerId, raceHorses),
 						payout: data.raceState.outcome.payout,
 					});
 				} else if (data.raceState.phase === 'betting' && data.raceState.raceNumber !== raceNumber) {
 					
 					setRaceOutcome(null);
-					setBetSlip(null);
-					localStorage.removeItem('currentBetSlip'); 
 				}
 
 			} catch (error) {
@@ -533,7 +543,7 @@ const HorseRacing = ({ user, syncPoints }) => {
 		const intervalId = setInterval(fetchRaceState, 1000);
 
 		return () => clearInterval(intervalId);
-	}, [raceNumber]); 
+	}, [raceNumber, user?.username]); 
 
 	const handlePlaceBet = async () => {
 		
@@ -566,12 +576,17 @@ const HorseRacing = ({ user, syncPoints }) => {
 			});
 
 			if (!response.ok) {
-				const errorData = await response.json();
+				let errorData = {};
+				try {
+					errorData = await response.json();
+				} catch {
+					errorData = {};
+				}
 				let errorMessage = errorData.error || 'Failed to place bet';
 
 				
 				
-				if (Boolean(betSlip) && errorMessage === 'You already have a bet placed on this race') {
+				if (betSlip && errorMessage === 'You already have a bet placed on this race') {
 					return; 
 				}
 
@@ -581,12 +596,12 @@ const HorseRacing = ({ user, syncPoints }) => {
 					errorMessage = 'Nie udało się postawić zakładu.';
 				}
 				setBettingError(errorMessage);
-				throw new Error(errorMessage);
+				return;
 			}
 			const data = await response.json();
 
 				
-			const currentBet = {
+			const currentBet = data.betSlip || {
 				horseId: selectedHorse.id,
 				stake: Number(stake),
 				odds: selectedHorse.odds,
@@ -594,21 +609,17 @@ const HorseRacing = ({ user, syncPoints }) => {
 			setBetSlip(currentBet);
 			syncPointsRef.current(data.userBalance); 
 			try {
-				localStorage.setItem('currentBetSlip', JSON.stringify(currentBet));
+				localStorage.setItem('currentBetSlip', JSON.stringify({
+					...currentBet,
+					raceNumber,
+					username: user?.username,
+				}));
 			} catch (e) {
 				console.error('Failed to save bet slip to local storage', e);
 			}
 		} catch (error) {
 			console.error('Error placing bet:', error);
-			
-			if (!betSlip) {
-				const currentBet = {
-					horseId: selectedHorse.id,
-					stake: Number(stake),
-					odds: selectedHorse.odds,
-				};
-				setBetSlip(currentBet);
-			}
+			setBettingError('Nie udało się połączyć z serwerem zakładów.');
 		}
 	};
 

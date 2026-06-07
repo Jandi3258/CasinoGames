@@ -226,6 +226,7 @@ const getRaceState = async (username) => {
 
 const placeBet = async (username, betData) => {
   const race = await advanceGlobalRace();
+  const stake = Number(betData.stake);
 
   if (race.phase !== 'betting') {
     return { success: false, error: 'Betting is only allowed during the betting phase' };
@@ -235,22 +236,30 @@ const placeBet = async (username, betData) => {
     return { success: false, error: 'You already have a bet placed on this race' };
   }
 
+  if (!Number.isFinite(stake) || stake <= 0) {
+    return { success: false, error: 'Nieprawidłowa stawka' };
+  }
+
+  if (!horses.some((horse) => horse.id === betData.horseId)) {
+    return { success: false, error: 'Nieprawidłowy koń' };
+  }
+
   try {
     const checkRes = await pool.query('SELECT points FROM users WHERE username = $1', [username]);
     if (checkRes.rows.length === 0) {
       return { success: false, error: 'User not found' };
     }
     const currentPoints = Number(checkRes.rows[0].points);
-    if (currentPoints < betData.stake) {
+    if (currentPoints < stake) {
       return { success: false, error: 'Za mało punktów!' };
     }
 
     const updateRes = await pool.query(
       'UPDATE users SET points = points - $1 WHERE username = $2 RETURNING points',
-      [betData.stake, username]
+      [stake, username]
     );
 
-    race.bets[username] = { ...betData, username };
+    race.bets[username] = { ...betData, stake, username };
 
     return {
       success: true,
