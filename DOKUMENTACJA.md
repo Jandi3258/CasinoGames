@@ -120,3 +120,71 @@ Przechowuje historię wszystkich zawartych przez użytkowników zakładów i wyn
 ---
 
 ## Jak uruchomić projekt
+ 
+### Krok 1: Sklonuj repozytorium
+ 
+Pobierz projekt na swój komputer i przejdź do jego głównego folderu:
+ 
+```bash
+git clone https://github.com/Jandi3258/CasinoGames.git
+cd CasinoGames
+```
+ 
+### Krok 2: Uruchomienie serwera (Terminal 1 — Backend)
+ 
+W pierwszym oknie terminala skonfigurujemy i uruchomimy serwer obsługujący logikę gier oraz połączenie z bazą danych.
+ 
+Przejdź do folderu backendu i zainstaluj zależności:
+ 
+```bash
+cd casino-backend
+npm install
+```
+ 
+> **Ważne: Konfiguracja zmiennych środowiskowych!**  
+> Utwórz plik `.env` w folderze `casino-backend`. Musisz w nim podać poprawne dane logowania do swojej lokalnej bazy PostgreSQL, w przeciwnym razie serwer wyrzuci błąd `SCRAM-SERVER-FIRST-MESSAGE`.
+ 
+Przykładowy plik `.env` (dostępny również na GitHubie):
+ 
+```env
+DB_USER=twoja_nazwa_uzytkownika
+DB_PASSWORD=twoje_haslo_do_bazy
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=nazwa_bazy_danych_kasyna
+```
+ 
+Uruchom serwer:
+ 
+```bash
+node index.js
+```
+ 
+### Krok 3: Uruchomienie aplikacji (Terminal 2 — Frontend)
+ 
+Otwórz nowe okno terminala, wróć do głównego folderu projektu i przejdź do sekcji frontendowej:
+ 
+```bash
+cd ..
+cd casino-frontend
+npm install
+npm run dev
+```
+ 
+---
+ 
+## Rozwiązywanie problemów
+ 
+### Błąd: `EADDRINUSE: address already in use :::6583`
+ 
+Jeśli widzisz ten błąd przy próbie uruchomienia backendu, oznacza to, że w tle działa już zawieszony proces Node.js zajmujący ten port. Zdarza się to często po wciśnięciu `Ctrl+Z` zamiast `Ctrl+C`.
+ 
+**Rozwiązanie (Mac/Linux):**
+ 
+```bash
+npx kill-port 6583
+# lub
+killall node
+```
+ 
+Następnie spróbuj ponownie uruchomić serwer.
