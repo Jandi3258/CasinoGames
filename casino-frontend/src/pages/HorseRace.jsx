@@ -582,7 +582,7 @@ const HorseRacing = ({ user, syncPoints }) => {
 				} catch {
 					errorData = {};
 				}
-				let errorMessage = errorData.error || 'Failed to place bet';
+				let errorMessage = errorData.error || 'Nie udało się postawić zakładu.';
 
 				
 				
@@ -592,7 +592,13 @@ const HorseRacing = ({ user, syncPoints }) => {
 
 				if (errorMessage === 'You already have a bet placed on this race') {
 					errorMessage = 'Masz już postawiony zakład na ten wyścig.';
-				} else if (errorMessage === 'Failed to place bet') {
+				} else if (errorMessage === 'Betting is only allowed during the betting phase') {
+					errorMessage = 'Zakłady można stawiać tylko w fazie obstawiania.';
+				} else if (errorMessage === 'User not found') {
+					errorMessage = 'Nie znaleziono użytkownika.';
+				} else if (errorMessage === 'Missing required fields: username, horseId, stake, odds') {
+					errorMessage = 'Brakuje wymaganych danych zakładu.';
+				} else if (errorMessage === 'Server error' || errorMessage === 'Failed to place bet') {
 					errorMessage = 'Nie udało się postawić zakładu.';
 				}
 				setBettingError(errorMessage);

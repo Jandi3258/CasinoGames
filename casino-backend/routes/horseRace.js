@@ -13,7 +13,7 @@ router.get('/horse-race/current', async (req, res) => {
       });
   } catch (err) {
       console.error(err);
-      res.status(500).json({ success: false, error: 'Server error' });
+      res.status(500).json({ success: false, error: 'Błąd serwera.' });
   }
 });
 
@@ -23,7 +23,7 @@ router.post('/horse-race/current/bet', async (req, res) => {
   if (!username || !horseId || !stake || !odds) {
     return res.status(400).json({
       success: false,
-      error: 'Missing required fields: username, horseId, stake, odds',
+      error: 'Brakuje wymaganych danych zakładu.',
     });
   }
 
@@ -41,7 +41,7 @@ router.post('/horse-race/current/bet', async (req, res) => {
       res.json(result);
   } catch (err) {
       console.error(err);
-      res.status(500).json({ success: false, error: 'Server error' });
+      res.status(500).json({ success: false, error: 'Błąd serwera.' });
   }
 });
 

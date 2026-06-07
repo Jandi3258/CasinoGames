@@ -229,11 +229,11 @@ const placeBet = async (username, betData) => {
   const stake = Number(betData.stake);
 
   if (race.phase !== 'betting') {
-    return { success: false, error: 'Betting is only allowed during the betting phase' };
+    return { success: false, error: 'Zakłady można stawiać tylko w fazie obstawiania.' };
   }
 
   if (race.bets[username]) {
-    return { success: false, error: 'You already have a bet placed on this race' };
+    return { success: false, error: 'Masz już postawiony zakład na ten wyścig.' };
   }
 
   if (!Number.isFinite(stake) || stake <= 0) {
@@ -247,7 +247,7 @@ const placeBet = async (username, betData) => {
   try {
     const checkRes = await pool.query('SELECT points FROM users WHERE username = $1', [username]);
     if (checkRes.rows.length === 0) {
-      return { success: false, error: 'User not found' };
+      return { success: false, error: 'Nie znaleziono użytkownika.' };
     }
     const currentPoints = Number(checkRes.rows[0].points);
     if (currentPoints < stake) {
