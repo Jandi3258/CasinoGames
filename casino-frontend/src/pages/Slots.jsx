@@ -35,55 +35,6 @@ const Slots = ({ user, syncPoints }) => {
 
   const getRandomSymbol = () => weightedSymbols[Math.floor(Math.random() * weightedSymbols.length)];
 
-  const generateControlledOutcome = (numericBet) => {
-    const roll = Math.random() * 100;
-    
-    const CHANCE_JACKPOT = 4;  
-    const CHANCE_PAIR = 40;     
-    
-    if (roll < CHANCE_JACKPOT) {
-      const winSym = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
-      const conf = SYMBOL_CONFIG.find(s => s.img === winSym);
-      const payout = numericBet * conf.mult;
-      
-      return {
-        won: true,
-        payout: payout,
-        newPoints: user.points - numericBet + payout,
-        gameData: { reels: [winSym, winSym, winSym] }
-      };
-    } 
-    
-    else if (roll < CHANCE_JACKPOT + CHANCE_PAIR) {
-      const pairSym = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
-      const remainingSyms = SYMBOLS.filter(s => s !== pairSym);
-      const otherSym = remainingSyms[Math.floor(Math.random() * remainingSyms.length)];
-      
-      const payout = Math.floor(numericBet * 2.5);
-
-      const generatedReels = [pairSym, pairSym, otherSym].sort(() => Math.random() - 0.5);
-
-      return {
-        won: true,
-        payout: payout,
-        newPoints: user.points - numericBet + payout,
-        gameData: { reels: generatedReels }
-      };
-    } 
-    
-    else {
-      const shuffled = [...SYMBOLS].sort(() => Math.random() - 0.5);
-      const losingReels = [shuffled[0], shuffled[1], shuffled[2]];
-
-      return {
-        won: false,
-        payout: 0,
-        newPoints: user.points - numericBet,
-        gameData: { reels: losingReels }
-      };
-    }
-  };
-
   const slowDownReel = (index, finalSymbol, delays) => {
     updateSpinning(prev => {
       const newSpinning = [...prev];
@@ -138,11 +89,25 @@ const Slots = ({ user, syncPoints }) => {
     }, 100);
 
     try {
-      const data = await new Promise((resolve) => {
-        setTimeout(() => {
-          resolve(generateControlledOutcome(numericBet));
-        }, 600);
+      const response = await fetch('http://localhost:8080/api/game/play', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: user.username,
+          gameName: 'Slots',
+          betAmount: numericBet,
+          gameParams: {},
+        }),
       });
+      const data = await response.json();
+
+      if (!response.ok) {
+        setKomunikat(`❌ ${data.message || 'Nie udało się zagrać.'}`);
+        clearInterval(spinInterval);
+        setIsSpinning(false);
+        updateSpinning(['stop', 'stop', 'stop']);
+        return;
+      }
 
       const backendReels = data.gameData.reels;
       const finalSymbols = backendReels.map(sym => ({ img: sym }));

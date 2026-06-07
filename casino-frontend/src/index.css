@@ -1,3 +1,5 @@
+@import "tailwindcss";
+
 :root {
   /* Nowoczesna paleta Dark Gaming */
   --bg-body: #0b0c10;

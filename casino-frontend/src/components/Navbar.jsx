@@ -57,7 +57,7 @@ const Navbar = ({ user, onLogout }) => (
             <span style={{ color: '#f8f9fa', whiteSpace: 'nowrap' }}>👤 {user.username}</span>
             <span style={{ color: 'rgba(255, 255, 255, 0.2)', fontSize: '1.2rem', margin: '0 -5px' }}>•</span>
             <span style={{ color: '#ffcc33', whiteSpace: 'nowrap', fontWeight: '600' }}>
-                💰 Saldo: {user.points} pkt
+                💰 Saldo: {Number(user.points).toFixed(2)} pkt
             </span>
 
             <button

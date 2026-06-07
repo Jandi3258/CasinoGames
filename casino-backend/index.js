@@ -5,6 +5,7 @@ const initDb = require('./models/initDb');
 const authRoutes = require('./routes/auth');
 const gameRoutes = require('./routes/game');
 const paymentRoutes = require('./routes/payment');
+const horseRaceRoutes = require('./routes/horseRace');
 
 const app = express();
 app.use(cors());
@@ -17,6 +18,7 @@ initDb();
 app.use('/api', authRoutes);
 app.use('/api', gameRoutes);
 app.use('/api', paymentRoutes);
+app.use('/api', horseRaceRoutes);
 
 const PORT = 8080;
 app.listen(PORT, () => console.log(`🚀 Serwer modułowy działa na porcie ${PORT}`));

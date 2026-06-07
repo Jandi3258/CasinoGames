@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 
@@ -24,7 +24,7 @@ function App() {
     });
 
     // 2. AKTUALIZACJA PUNKTÓW: Bezpiecznie nadpisuje tylko punkty, reszta (w tym token) zostaje
-    const syncPoints = (newPoints) => {
+    const syncPoints = useCallback((newPoints) => {
         setLoggedUser(prev => {
             if (!prev) return null; // Zabezpieczenie
             
@@ -39,7 +39,7 @@ function App() {
             localStorage.setItem('user', JSON.stringify(updated));
             return updated;
         });
-    };
+    }, []);
 
     // 3. WYLOGOWANIE: Usuwamy tylko jeden klucz
     const handleLogout = () => {
