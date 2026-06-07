@@ -25,7 +25,7 @@ const defaultHorses = [
 	},
 	{
 		id: 'h4',
-		name: 'Koń Jurka',
+		name: 'Szlachetny Filip',
 		odds: 5.6,
 		color: '#0F766E',
 		history: ['3rd', '4th', '2nd', '5th', '3rd'],
@@ -660,10 +660,7 @@ const HorseRacing = ({ user, syncPoints }) => {
 									Obstaw wyścig #{raceNumber}. Obserwuj przebieg wyścigu w tle i przygotuj kolejny zakład.
 							</p>
 						</div>
-						<div className="flex flex-wrap items-center justify-center gap-4 w-full">
-							<div className="rounded-full bg-zinc-900 px-6 py-2 text-lg font-bold uppercase tracking-wider text-green-300 text-center">
-								💰 Saldo: {user.points.toFixed(2)} punktów
-							</div>
+						<div className="mx-auto flex w-full flex-wrap items-center justify-center gap-4">
 							<div className="rounded-full bg-zinc-900 px-6 py-2 text-lg font-bold uppercase tracking-wider text-zinc-300 text-center">
 								🏁 Wyścig #{raceNumber} • {phaseLabels[phase]}
 							</div>

@@ -4,7 +4,7 @@ const DEFAULT_HORSES = [
   { id: 'h1', name: 'Szybki Paweł', color: '#E11D48' },
   { id: 'h2', name: 'Pan Kopytnik', color: '#2563EB' },
   { id: 'h3', name: 'Rumak Rysiek', color: '#F59E0B' },
-  { id: 'h4', name: 'Koń Jurka', color: '#0F766E' },
+  { id: 'h4', name: 'Szlachetny Filip', color: '#0F766E' },
   { id: 'h5', name: 'Dziki Dyzek', color: '#7C3AED' },
   { id: 'h6', name: 'Wolny Jakub', color: '#D97706' },
 ];
