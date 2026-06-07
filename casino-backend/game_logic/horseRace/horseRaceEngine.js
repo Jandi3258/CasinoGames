@@ -1,3 +1,5 @@
+const { pool } = require('../../config/db');
+
 const horses = [
   {
     id: 'h1',
@@ -50,11 +52,6 @@ const phaseDurations = {
   results: 5,
 };
 
-
-const userBalances = {
-  'user123': 1000,
-};
-
 let globalRace = {
   raceNumber: 1,
   phase: 'betting',
@@ -99,11 +96,10 @@ const getRaceOrder = (winnerId) => {
   return [winner, ...others];
 };
 
-const advanceGlobalRace = () => {
+const advanceGlobalRace = async () => {
   const now = Date.now();
   let elapsed = Math.floor((now - globalRace.phaseStartTime) / 1000);
 
-  
   while (elapsed >= phaseDurations[globalRace.phase]) {
     elapsed -= phaseDurations[globalRace.phase];
     globalRace.phaseStartTime += phaseDurations[globalRace.phase] * 1000;
@@ -122,20 +118,45 @@ const advanceGlobalRace = () => {
       globalRace.order = getRaceOrder(winner.id);
       
       globalRace.payouts = {};
-      for (const userId in globalRace.bets) {
-        const bet = globalRace.bets[userId];
-        globalRace.payouts[userId] = bet.horseId === winner.id
+      for (const username in globalRace.bets) {
+        const bet = globalRace.bets[username];
+        globalRace.payouts[username] = bet.horseId === winner.id
           ? bet.stake * winner.odds * 0.94
           : 0;
       }
     }
 
     if (nextPhase === 'results') {
-      for (const userId in globalRace.payouts) {
-        const payout = globalRace.payouts[userId];
+      for (const username in globalRace.payouts) {
+        const payout = globalRace.payouts[username];
         if (payout > 0) {
-          userBalances[userId] = (userBalances[userId] || 0) + payout;
-          console.log(`✅ User ${userId} won ${payout} coins! New balance: ${userBalances[userId]}`);
+          try {
+            const res = await pool.query(
+              'UPDATE users SET points = points + $1 WHERE username = $2 RETURNING id, points',
+              [payout, username]
+            );
+            if (res.rows.length > 0) {
+              console.log(`✅ User ${username} won ${payout} coins! New balance: ${res.rows[0].points}`);
+              await pool.query(
+                'INSERT INTO bets (user_id, game_name, bet_amount, payout, won) VALUES ($1, $2, $3, $4, $5)',
+                [res.rows[0].id, 'horseRace', globalRace.bets[username].stake, payout, true]
+              );
+            }
+          } catch (err) {
+            console.error('Error updating user points for horse race win', err);
+          }
+        } else {
+          try {
+            const res = await pool.query('SELECT id FROM users WHERE username = $1', [username]);
+            if (res.rows.length > 0) {
+              await pool.query(
+                'INSERT INTO bets (user_id, game_name, bet_amount, payout, won) VALUES ($1, $2, $3, $4, $5)',
+                [res.rows[0].id, 'horseRace', globalRace.bets[username].stake, 0, false]
+              );
+            }
+          } catch (err) {
+            console.error('Error logging bet', err);
+          }
         }
       }
     }
@@ -174,46 +195,72 @@ const advanceGlobalRace = () => {
   return globalRace;
 };
 
-const getRaceState = (userId) => {
-  const race = advanceGlobalRace();
-  const userBet = race.bets[userId];
+const getRaceState = async (username) => {
+  const race = await advanceGlobalRace();
+  const userBet = race.bets[username];
   
+  let userBalance = undefined;
+  if (username) {
+    try {
+      const res = await pool.query('SELECT points FROM users WHERE username = $1', [username]);
+      if (res.rows.length > 0) {
+        userBalance = Number(res.rows[0].points);
+      }
+    } catch (e) {
+      console.error('Error fetching balance in horse race state', e);
+    }
+  }
+
   return { 
     ...race,
     horses,
     outcome: race.winnerId ? {
       winnerId: race.winnerId,
       order: race.order,
-      payout: race.payouts[userId] || 0,
+      payout: race.payouts[username] || 0,
     } : null,
-    userBalance: userId ? userBalances[userId] : undefined,
+    userBalance,
     userBet,
   };
 };
 
-const placeBet = (userId, betData) => {
-  const race = advanceGlobalRace();
+const placeBet = async (username, betData) => {
+  const race = await advanceGlobalRace();
 
   if (race.phase !== 'betting') {
     return { success: false, error: 'Betting is only allowed during the betting phase' };
   }
 
-  if (race.bets[userId]) {
+  if (race.bets[username]) {
     return { success: false, error: 'You already have a bet placed on this race' };
   }
 
-  if (!userBalances[userId] || userBalances[userId] < betData.stake) {
-    return { success: false, error: 'Insufficient balance' };
+  try {
+    const checkRes = await pool.query('SELECT points FROM users WHERE username = $1', [username]);
+    if (checkRes.rows.length === 0) {
+      return { success: false, error: 'User not found' };
+    }
+    const currentPoints = Number(checkRes.rows[0].points);
+    if (currentPoints < betData.stake) {
+      return { success: false, error: 'Za mało punktów!' };
+    }
+
+    const updateRes = await pool.query(
+      'UPDATE users SET points = points - $1 WHERE username = $2 RETURNING points',
+      [betData.stake, username]
+    );
+
+    race.bets[username] = { ...betData, username };
+
+    return {
+      success: true,
+      betSlip: race.bets[username],
+      userBalance: updateRes.rows[0].points,
+    };
+  } catch (e) {
+    console.error('Error placing bet', e);
+    return { success: false, error: 'Błąd bazy danych' };
   }
-
-  userBalances[userId] -= betData.stake;
-  race.bets[userId] = { ...betData, userId };
-
-  return {
-    success: true,
-    betSlip: race.bets[userId],
-    userBalance: userBalances[userId],
-  };
 };
 
 module.exports = {

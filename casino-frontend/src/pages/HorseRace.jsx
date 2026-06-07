@@ -488,8 +488,9 @@ const HorseRacing = ({ user, syncPoints }) => {
 		const fetchRaceState = async () => {
 			try {
 				
-				const userId = 'user123'; 
-				const response = await fetch(`http://localhost:8080/api/horse-race/current?userId=${userId}`);
+				const username = user?.username; 
+				if (!username) return;
+				const response = await fetch(`http://localhost:8080/api/horse-race/current?username=${username}`);
 				if (!response.ok) {
 					throw new Error(`Failed to fetch race state: ${response.statusText}`);
 				}
@@ -557,6 +558,7 @@ const HorseRacing = ({ user, syncPoints }) => {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
+					username: user?.username,
 					horseId: selectedHorse.id,
 					stake: Number(stake),
 					odds: selectedHorse.odds,

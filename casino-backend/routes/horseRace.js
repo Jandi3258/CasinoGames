@@ -3,42 +3,46 @@ const { getRaceState, placeBet } = require('../game_logic/horseRace/horseRaceEng
 
 const router = express.Router();
 
-
-router.get('/horse-race/current', (req, res) => {
-  
-  const userId = 'user123'; 
-  const raceState = getRaceState(userId);
-
-  res.json({
-    success: true,
-    raceState: raceState,
-  });
+router.get('/horse-race/current', async (req, res) => {
+  const username = req.query.username; 
+  try {
+      const raceState = await getRaceState(username);
+      res.json({
+        success: true,
+        raceState: raceState,
+      });
+  } catch (err) {
+      console.error(err);
+      res.status(500).json({ success: false, error: 'Server error' });
+  }
 });
 
+router.post('/horse-race/current/bet', async (req, res) => {
+  const { username, horseId, stake, odds } = req.body;
 
-router.post('/horse-race/current/bet', (req, res) => {
-  
-  const userId = 'user123'; 
-  const { horseId, stake, odds } = req.body;
-
-  if (!horseId || !stake || !odds) {
+  if (!username || !horseId || !stake || !odds) {
     return res.status(400).json({
       success: false,
-      error: 'Missing required fields: horseId, stake, odds',
+      error: 'Missing required fields: username, horseId, stake, odds',
     });
   }
 
-  const result = placeBet(userId, {
-    horseId,
-    stake: Number(stake),
-    odds: Number(odds),
-  });
+  try {
+      const result = await placeBet(username, {
+        horseId,
+        stake: Number(stake),
+        odds: Number(odds),
+      });
 
-  if (!result.success) {
-    return res.status(400).json(result);
+      if (!result.success) {
+        return res.status(400).json(result);
+      }
+
+      res.json(result);
+  } catch (err) {
+      console.error(err);
+      res.status(500).json({ success: false, error: 'Server error' });
   }
-
-  res.json(result);
 });
 
 module.exports = router;
