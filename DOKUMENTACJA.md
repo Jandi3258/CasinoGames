@@ -41,12 +41,50 @@ Platforma przeznaczona jest dla użytkowników poszukujących bezpiecznej rozryw
 
 ## Wybór technologii
 
-
----
+| Technologia 					|		Zastosowanie 									|	Uzasadnienie |
+| :--- | :--- | :--- |
+| JavaScript					|			Cała funkcjonalność projektu				|			Język programowania skupiony na działaniu z wszelakimi technologiami sieciowymi; kompatybilny z wieloma technologiami |
+| Node.js						|			Struktura serwera							|		Łatwy w zarządzaniu system do centralnego przetwarzania poleceń sieciowych |
+| PostgreSQL					|			Rekordy transakcji, dane użytkowników		|			Popularne rozwiązanie do zarządzania rekordami na dużą skalę |
+| Vite							|			Środowisko developmentu						|	Wspomaganie procesu tworzenia strony |
+| React							|		Wygląd strony klienta							|		Nowoczesne, interaktywne zastosowanie do budowania wyglądu strony internetowej |
+| REST							|		Zarządzanie akcjami								|	Jednolity sposób zarządzania akcji wywoływanych przez gracza na serwerze |
+| WebSocket						|		Interaktywne gry								|		Zapewnienie komunikacji bezpośredniej między klientem a silnikiem gry |
+| JsonWebToken					|		Autoryzacja użytkownika							|	Weryfikacja użytkownika |
 
 ## Projekt architektury aplikacji z uzasadnieniem wyboru technologii
 
+System został oparty na warstwowej architekturze, w której warstwa frontendowa komunikuje się z backendem, który składa się z warstwy routingu, logiki biznesowej oraz warstwy dostępu do danych obsługującej bazę PostgreSQL.
 
+```text
++--------------------------------------------+
+| Warstwa prezentacji - React                |
+| • Interaktywna strona                      |
+| • Obsługa żądań klienta                    |
++--------------------------------------------+
+                      ^
+                      |
++--------------------------------------------+
+| Warstwa routingu - Node.js                 |
+| • Przekierowanie żądań                     |
+| • Autoryzacja użytkownika                  |
++--------------------------------------------+
+                      ^
+                      |
++--------------------------------------------+
+| Warstwa logiki biznesowej - JavaScript     |
+| • Obsługa procesu gier                     |
+| • Obsługa płatności                        |
+| • Przekazywanie informacji do wyświetlania |
++--------------------------------------------+
+                      ^
+                      |
++--------------------------------------------+
+| Warstwa dostępu do danych - SQL            |
+| • Zapisywanie rekordów                     |
+| • Dostęp do kont użytkowników              |
++--------------------------------------------+
+```
 ---
 
 ## Projekt Bazy Danych
