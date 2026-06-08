@@ -114,7 +114,7 @@ function setupBlackjackSocketHandler({ server, path }) {
         }));
 
         ws.on('message', async (message) => {
-            console.log(message);
+            //console.log(message);
 
             let data;
             try {

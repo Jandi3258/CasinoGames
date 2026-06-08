@@ -33,6 +33,11 @@ setupBlackjackSocketHandler({
 
 const path = require('path');
 const website_server = express();
+// The server can provide access to the frontend locally as well
+// Requires the full built project in the Website/ folder
+// Run the frontend locally: set frontend_local=true before starting the server.
+// Do not run the frontend locally: leave frontend_local unset or set it to false.
+const frontendLocal = String(process.env.frontend_local || '').toLowerCase() === 'true';
 
 website_server.use(express.static(path.join(__dirname, 'Website')));
 
@@ -45,7 +50,9 @@ website_server.use((req, res) => {
 });
 
 const WEBSITE_PORT = 5173;
-website_server.listen(WEBSITE_PORT, () => console.log(`Website active on port ${WEBSITE_PORT}`));
+if (frontendLocal) {
+  website_server.listen(WEBSITE_PORT, () => console.log(`Website active on port ${WEBSITE_PORT}`));
+}
 
 // Podłączenie modułów
 app.use('/api', authRoutes);
