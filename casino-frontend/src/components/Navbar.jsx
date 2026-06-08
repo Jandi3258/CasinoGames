@@ -1,23 +1,7 @@
 import React from 'react';
-import { useEffect, useState } from 'react'; import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
 
-const Navbar = ({ user, onLogout }) => {
-  const [wallet, setWallet] = useState({
-    changed: false,
-    prev: user?.points ?? 0,
-    difference: 0,
-  });
-  
-  useEffect(() => {
-    setWallet(prev => ({
-      changed: !prev.changed,
-      difference: user.points - prev.prev,
-      prev: user.points
-    }))
-  }, [user.points])
-
-  return (
+const Navbar = ({ user, onLogout }) => (
     <nav style={{ 
       background: 'linear-gradient(90deg, #0a0c14 0%, #151828 50%, #0a0c14 100%)', 
       padding: '14px 28px', 
@@ -71,29 +55,9 @@ const Navbar = ({ user, onLogout }) => {
           fontWeight: '500'
         }}>
             <span style={{ color: '#f8f9fa', whiteSpace: 'nowrap' }}>👤 {user.username}</span>
-            
             <span style={{ color: 'rgba(255, 255, 255, 0.2)', fontSize: '1.2rem', margin: '0 -5px' }}>•</span>
-            <span style={{ color: '#ffcc33', whiteSpace: 'nowrap', fontWeight: '600', position: 'relative' }}>
+            <span style={{ color: '#ffcc33', whiteSpace: 'nowrap', fontWeight: '600' }}>
                 💰 Saldo: {Number(user.points).toFixed(2)} pkt
-            
-              <motion.div
-                key={wallet.changed.toString()}
-                initial={{ x: 0, y: 0, opacity: 1 }}
-                animate={{ x: 0, y: 60, opacity: 0 }}
-                transition={{ duration: 2.5 }}
-                style={{
-                  position: 'absolute',
-                  top: '50%',
-                  left: '50%',
-                  transform: 'translate(-50%, -50%)',
-                  zIndex: 9999,
-                  color: wallet.difference < 0 ? '#ff0000' : '#00ff00',
-                  fontSize: '1.3rem',
-                  userSelect: 'none'
-                }}
-              >
-                {wallet.difference < 0 ? wallet.difference : ("+" + wallet.difference)}
-              </motion.div>
             </span>
 
             <button
@@ -118,6 +82,6 @@ const Navbar = ({ user, onLogout }) => {
             </button>
         </div>
     </nav>
-)};
+);
 
 export default Navbar;
