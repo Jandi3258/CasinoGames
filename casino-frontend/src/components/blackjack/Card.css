@@ -35,6 +35,13 @@
   transform: rotateY(180deg);
 }
 
+.card-face .front {
+  max-width: none;
+  max-height: none;
+  width: auto;
+  height: auto;
+}
+
 .card-face .front,
 .card-face .back {
   display: block;
