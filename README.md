@@ -13,4 +13,4 @@
 
 ![Rozgrywka 4](Photos/HorseRace1.png)  
 ![Rozgrywka 4](Photos/HorseRace2.png)  
-*BlackJack*
+*HorseRace*
