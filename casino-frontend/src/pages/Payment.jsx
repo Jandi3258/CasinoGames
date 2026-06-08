@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 const Payment = ({ user, syncPoints }) => {
     const navigate = useNavigate();
@@ -140,7 +140,7 @@ const Payment = ({ user, syncPoints }) => {
                     </button>
                 </div>
                 <div style={{ maxWidth: '600px', margin: '24px auto 0', textAlign: 'center' }}>
-                    <a href="/transactions" style={{ color: '#ffcc33', textDecoration: 'none', fontWeight: 700 }}>Zobacz pełną historię transakcji →</a>
+                    <Link to="/transactions" style={{ color: '#ffcc33', textDecoration: 'none', fontWeight: 700 }}>Zobacz pełną historię transakcji →</Link>
                 </div>
             </div>
         </div>
