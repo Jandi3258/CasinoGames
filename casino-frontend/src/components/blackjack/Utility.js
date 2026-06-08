@@ -2,34 +2,6 @@ export function newID() {
     return Math.random().toString(16).slice(2);
 }
 
-let nextClickResolver = null;
-
-export function waitForNextClick() {
-    return new Promise((resolve) => {
-        nextClickResolver = resolve;
-    });
-}
-
-export function evaluateClick(resetToBet) {
-    if (nextClickResolver) {
-        const resolve = nextClickResolver;
-        nextClickResolver = null;
-        resolve();
-        return true;
-    }
-
-    if (typeof resetToBet === 'function') {
-        resetToBet();
-        return true;
-    }
-
-    return false;
-}
-
-export function clearNextClick() {
-    nextClickResolver = null;
-}
-
 export function sleep(ms = 1000) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }

@@ -89,6 +89,7 @@ const Navbar = ({ user, onLogout }) => {
                   zIndex: 9999,
                   color: wallet.difference < 0 ? '#ff0000' : '#00ff00',
                   fontSize: '1.3rem',
+                  userSelect: 'none'
                 }}
               >
                 {wallet.difference < 0 ? wallet.difference : ("+" + wallet.difference)}

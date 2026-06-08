@@ -48,7 +48,6 @@ function getCardRotation(card, index) {
 }
 
 function toSpriteCard(card) {
-    console.log('spriting: ', card)
     if (!card) {
         return null;
     }
@@ -71,14 +70,13 @@ function toSpriteCard(card) {
 }
 
 function Hand({ cards = [], flip = false, cardOverlap = -12, className = '', children = null }) {
-    console.log(`displaying ${flip ? 'dealer' : 'player'} hand: `, cards);
     return (
         <div
             className={`Hand${flip ? ' Hand--flipped' : ''}${className ? ` ${className}` : ''}`}
             style={{ '--card-overlap': `${cardOverlap}px` }}
         >
             {cards.map((card, index) => {
-                const spriteCard = toSpriteCard(card); console.log('sprited: ', spriteCard);
+                const spriteCard = toSpriteCard(card);
                 const isFlipped = typeof card?.flipped === 'boolean' ? card.flipped : !spriteCard;
                 const key = card?.uid || `${card?.suit || card?.color_id || 'hidden'}-${card?.value || card?.card_id || 'back'}-${index}`;
 

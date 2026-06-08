@@ -1,11 +1,12 @@
 const Deck = require('./deck');
-const debug_print = true;
+const debug_print = false;
 class GameSession {
-  constructor(sessionId, username, alterPlayerTokens) {
+  constructor(sessionId, username, alterPlayerTokens, logBet) {
     this.sessionId = sessionId;
     this.username = username;
     this.playerTokens = 0; // this' initialization is validated inside ws
     this.alterPlayerTokens = alterPlayerTokens;
+    this.logBet = logBet || (async () => {});
     this.currentBet = 0;
     this.deck = new Deck();
     this.playerHand = [];
@@ -76,6 +77,8 @@ class GameSession {
   }
 
   async startNewGame(betAmount) {
+    await this.logBet('BEGIN');
+
     const res = await this.alterPlayerTokens({ username: this.username, amount: -betAmount });
     if (res && res.success) this.playerTokens = res.newPoints;
 
@@ -190,7 +193,7 @@ class GameSession {
       result['payout'] = this.currentBet;
       result['statusMessage'] = "Remis!";
     }
-    this.cashOut(result['payout']);
+    await this.cashOut(result['payout']);
     result['newTotal'] = this.playerTokens;
     return result;
   }
@@ -229,7 +232,7 @@ class GameSession {
     const dealerScore = this.getDealerPoints();
     let payout = hand_bet;
     let message = 'Remis';
-    console.log('P: ', playerScore, ', D: ', dealerScore);
+    if ( debug_print ) console.log('playing P: ', playerScore, ', D: ', dealerScore);
     if (playerScore > 21) {
       message = 'Przebiłeś! Krupier wygrywa.';
       payout = 0;
@@ -253,8 +256,9 @@ class GameSession {
     return {h_handID: hand_id, h_payout: payout, h_statusMessage: message};
   }
 
-  endGame() {
+  async endGame() {
     this.gameActive = false;
+    await this.logBet('END');
   }
 
   async handleAction(data, ws) {
@@ -337,12 +341,12 @@ class GameSession {
             break;
           }
 
-          if (this.alterPlayerTokens({username: this.username, amount: 0}) < this.currentBet) {
+          if (this.playerTokens < this.currentBet) {
             response = { action: 'ERROR', message: 'Brak żetonów na tą akcję' };
             break;
           }
-          this.playerTokens -= this.currentBet;
-          this.alterPlayerTokens({username: this.username, amount: -this.currentBet});
+
+          await this.bet(this.currentBet);
 
           this.queuedHands.push({
             id: this.handID + this.queuedHands.length + 1,
@@ -368,12 +372,13 @@ class GameSession {
             break;
           }
 
-          if (this.alterPlayerTokens({username: this.username, amount: 0}) < this.currentBet) {
+          if (this.playerTokens < this.currentBet) {
             response = { action: 'ERROR', message: 'Brak żetonów na tą akcję' };
             break;
           }
-          this.playerTokens -= this.currentBet;
-          this.alterPlayerTokens({username: this.username, amount: -this.currentBet});
+
+          const extraBet = this.currentBet;
+          await this.bet(extraBet);
           this.currentBet = this.currentBet * 2;
           
           let drawnCard = this.drawCard();
@@ -409,7 +414,7 @@ class GameSession {
               payout: recoveredTokens,
               newTotal: this.playerTokens,
             }
-            this.endGame();
+              await this.endGame();
           }
           break;
         }
@@ -425,7 +430,7 @@ class GameSession {
       }
 
       if ( response.blackjack ) {
-        this.endGame();
+        await this.endGame();
       } else
       if ( this.playerStood && this.gameActive && response.action !== 'SURRENDER' ) {
         if ( this.queuedHands.length > 0 ) {
@@ -463,13 +468,12 @@ class GameSession {
           let result = [];
 
           this.resolvedHands.forEach(({id, bet, cards}) => {
-            console.log("running for: ", id, bet, cards);
             let h_res = this.getResult(id, bet, cards);
             totalWin += h_res.h_payout;
             result.push(h_res);
           });
 
-          console.log("Total Winning is: ", totalWin);
+          if ( debug_print ) console.log("Total Winning is: ", totalWin);
           await this.cashOut(totalWin);
 
           response = {
@@ -485,7 +489,7 @@ class GameSession {
           };
           if (debug_print) console.log(response); // DEBUG
           ws.send(JSON.stringify(response));
-          this.endGame();
+          await this.endGame();
         }
       }
     } catch (error) {

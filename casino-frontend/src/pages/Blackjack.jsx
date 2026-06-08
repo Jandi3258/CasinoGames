@@ -6,12 +6,10 @@ import Card from '../components/blackjack/Card';
 import * as Util from '../components/blackjack/Utility';
 import { sleep } from '../components/blackjack/Utility';
 
-//import ConfettiCanvas from './components/ConfettiCanvas';
-
 import { confettiCannons, fireworkCannons } from '../assets/confettiCannons';
 
 const DEFAULT_BET = 50;
-const DEFAULT_URL = 'ws://127.0.0.1:6583/game/blackjack-game'
+const DEFAULT_URL = 'ws://127.0.0.1:8080/game/blackjack-game'
 
 const emptyGameState = {
   playerScore: 0,
@@ -46,8 +44,6 @@ function Blackjack({ user, syncPoints }) {
   const [betDisplay, setBetDisplay] = useState(DEFAULT_BET);
   const betAmount = useRef(DEFAULT_BET);
   function setBetAmount(val) {
-    // useStates are for render references, useRefs are for value references
-    // ong gonna have 2 use both ig
     setBetDisplay(val);
     betAmount.current = val;
   }
@@ -67,7 +63,6 @@ function Blackjack({ user, syncPoints }) {
 
   const [playerHands, setPlayerHands] = useState([]);
 
-  // TODO use these?? because like obvio but don't have to change now
   const activeHand = playerHands.find(hand => hand.status === 'active') ?? null;
   const playerCards = activeHand?.cards ?? [];
   const inactiveHands = playerHands.filter(hand => hand.status !== 'active');
@@ -78,14 +73,12 @@ function Blackjack({ user, syncPoints }) {
   const playerHandsRef = useRef(null);
 
   function addPlayerCard(card) {
-    console.log("added card: ", card);
     const newCard = { 
       uid: card.uid ?? Util.newID(), 
       color_id: card.color_id ?? 0, 
       card_id: card.card_id ?? 0, 
       flipped: card.flipped ?? !(card.color_id != null && card.card_id != null)
     }
-    console.log("created card: ", newCard);
     setPlayerHands(prev => prev.map(hand => 
         hand.status === 'active'
         ? {
@@ -98,23 +91,30 @@ function Blackjack({ user, syncPoints }) {
         : hand
       )
     )
-    console.log("all player hands: ", playerHands);
   }
 
   useEffect(() => {
-    console.log("playerHands changed", playerHands);
-
     playerHandsRef.current = playerHands;
     activeHandRef.current = playerHands.find(h => h.status === 'active') ?? null;
 
     setCanSplit(checkCanSplit());
   }, [playerHands]);
 
+  const [messageUpdater, setMessageUpdater] = useState(0);
+  useEffect(() => {
+    setMessageUpdater(prev => (prev + 1));
+  }, [statusMessage]);
+
   function playerDrawAnimation(card) {
+    const uid = Util.newID();
     const newCard = {
-      uid: Util.newID(),
+      uid,
       card_id: card.card_id,
       color_id: card.color_id,
+      flipped: true,
+    };
+    const handCard = {
+      ...newCard,
       flipped: false,
     };
 
@@ -129,9 +129,7 @@ function Blackjack({ user, syncPoints }) {
 
     // move to hand, update player points, end playerTurn if bust
     withDelay(1000, () => {
-      withDelay(0, () => addPlayerCard(
-        newCard
-      ));
+      addPlayerCard(handCard);
       setCardPile([]);
     });
   }
@@ -236,13 +234,9 @@ function Blackjack({ user, syncPoints }) {
     );
   }
 
-  function evaluateClick() { // OBSOLETE RN TBD
-    Util.evaluateClick(resetToBet);
-  }
   function resetToBet() {
     if (!clickReset) return;
 
-    Util.clearNextClick();
     animateStages.current.forEach((id) => clearTimeout(id));
     animateStages.current = [];
 
@@ -309,8 +303,6 @@ function Blackjack({ user, syncPoints }) {
         return;
       }
 
-      console.log("load: ", payload); // DEBUG
-
       switch (payload.action) {
         case 'INIT': {
           setSessionId(payload.sessionId);
@@ -323,7 +315,6 @@ function Blackjack({ user, syncPoints }) {
         case 'START': {
           setCardPile([]);
           setDealerCards([]);
-          Util.clearNextClick();
           gameEndedRef.current = false;
 
           standDelay.current = true;
@@ -433,11 +424,11 @@ function Blackjack({ user, syncPoints }) {
         }
         case 'DOUBLE-DOWN': {
           setCanDoubleDown(false);
-          // double the bet in the current hand; deduct currency
+          
           doubleBet(payload);
-          // run animation for new card added to player's hand
+          
           playerDrawAnimation(payload.card);
-          // disable any player actions (e.g. playerStood = true idk if anything else)
+          
           setPlayerTurn(false);
           break;
         }
@@ -465,18 +456,18 @@ function Blackjack({ user, syncPoints }) {
           break;
         }
         case 'SPLIT': {
-          // RECEIVED WHEN split action went through (same value cards + have tokens for it):
-          // update currency
           setCurrency(payload.currency);
           setBetAmount(payload.currentBet);
           updatePoints(payload.currency);
-          // run splitHands() to make new hand
+          
           splitHands();
-          // evaluate pulled card: cardPile animation + add to hand
+          
           playerDrawAnimation(payload.card);
-          // playerTurn = true, check canSplit, canDoubleDown and set them accordingly
-          setCanDoubleDown(checkCanDoubleDown());
+          
+          await sleep(1000);
           setPlayerTurn(true);
+          console.log('pturn: ', playerTurn, ' curr: ', currency, ' betAm ', betAmount);
+          setCanDoubleDown(currency >= betAmount.current);
           break;
         }
         case 'NEXT-HAND': {
@@ -492,14 +483,6 @@ function Blackjack({ user, syncPoints }) {
           break;
         }
         case 'DEALER-TURN': {
-          // TODO run the game; play against highest "hand-{nr}"
-          /* have the return payload return an array of items: {
-            hand_id: which hand this result evaluates
-            statusMessage: what to display when comparing dealer's hand to this hand
-            payout: payout from this hand
-          }*/
-          // save the above results somewhere; change the resetToBet function to for each click delete the active hand and show results against the next hand shown
-          // only actually reset to the pre game betting menu if run out of the results to show
           setCanSplit(false);
           setCanDoubleDown(false);
           const d = 1000;
@@ -614,7 +597,6 @@ function Blackjack({ user, syncPoints }) {
     if (gameState.playerStood) return;
     setGameState(prev => {
       standDelay.current = false;
-      //console.log(prev);
       let x = {
         ...prev,
         playerStood: true,
@@ -658,6 +640,7 @@ function Blackjack({ user, syncPoints }) {
 
   return (
     <main className="table-shell">
+    <div className="titleBox">BLACKJACK</div>
       <div className="table"
         onClick={resetToBet} role="button" tabIndex={0} aria-disabled={!clickReset}
       >
@@ -728,12 +711,14 @@ function Blackjack({ user, syncPoints }) {
           )}
 
           {errorMessage ? <div className="center-panel__error">{errorMessage}</div> : null}
-          <div className={`center-panel__status${betLocked ? ' center-panel__row--result' : ''}`}>
+          <motion.div key={messageUpdater}
+          initial={{ scaleX: '0.8', textShadow: '0 0 0px rgba(0,255,255,0)' }} animate={{ scaleX: '1', textShadow: '0 0 20px rgba(255, 251, 195, 0.6)' }} transition={{ duration: 0.15, ease: 'easeIn' }}
+           className={`center-panel__status${betLocked ? ' center-panel__row--result' : ''}`}>
             {statusMessage}
-          </div>
+          </motion.div>
           {gameState.gameActive ? (
             <div className="center-action-row">
-              <button type="button" className="center-action-button" onClick={action_double} disabled={!canDoubleDown || !playerTurn}>
+              <button type="button" className="center-action-button" onClick={action_double} disabled={!canDoubleDown}>
                 Podwój stawkę
               </button>
               <button type="button" className="center-action-button" onClick={action_surrender} disabled={!canSurrender}>
@@ -817,14 +802,6 @@ function Blackjack({ user, syncPoints }) {
             })()}
           </div>
         </section>
-
-        {false ? <section className="player-area">
-          <div className="hand-label"></div>
-          <Hand cards={playerCards ?? []} />
-          {gameState.gameActive ? (
-            <div className="hand-score hand-score--player">Player: {Util.handToPoints(playerCards ?? [])}</div>
-          ) : null}
-        </section> : null}
       </div>
     </main>
   );
