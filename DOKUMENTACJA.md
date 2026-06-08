@@ -56,6 +56,7 @@ Platforma przeznaczona jest dla użytkowników poszukujących bezpiecznej rozryw
 
 System został oparty na warstwowej architekturze, w której warstwa frontendowa komunikuje się z backendem, który składa się z warstwy routingu, logiki biznesowej oraz warstwy dostępu do danych obsługującej bazę PostgreSQL.
 
+```text
 +--------------------------------------------+
 | Warstwa prezentacji - React                |
 | • Interaktywna strona                      |
@@ -83,6 +84,7 @@ System został oparty na warstwowej architekturze, w której warstwa frontendowa
 | • Zapisywanie rekordów                     |
 | • Dostęp do kont użytkowników              |
 +--------------------------------------------+
+```
 ---
 
 ## Projekt Bazy Danych
