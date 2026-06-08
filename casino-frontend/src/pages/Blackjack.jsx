@@ -98,6 +98,7 @@ function Blackjack({ user, syncPoints }) {
     activeHandRef.current = playerHands.find(h => h.status === 'active') ?? null;
 
     setCanSplit(checkCanSplit());
+    console.log(playerHands);
   }, [playerHands]);
 
   const [messageUpdater, setMessageUpdater] = useState(0);

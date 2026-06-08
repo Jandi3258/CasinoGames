@@ -53,17 +53,15 @@ function Card({
     }
 
     const frontStyle = {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        width: `${IMG_WIDTH}px`,
-        height: `${IMG_HEIGHT}px`,
-        transform: `
-            translate(${-frontOffsetX * scale}px, ${-frontOffsetY * scale}px)
-            scale(${scale})
-        `,
-        transformOrigin: 'top left',
-    };
+  position: 'absolute',
+  left: `${-frontOffsetX * scale}px`,
+  top: `${-frontOffsetY * scale}px`,
+  width: `${IMG_WIDTH * scale}px`,
+  height: `${IMG_HEIGHT * scale}px`,
+  maxWidth: 'none',
+  maxHeight: 'none',
+  display: 'block',
+};
 
     const backStyle = {
         width: '100%',
