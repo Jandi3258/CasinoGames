@@ -1,16 +1,16 @@
 # CasinoGames
-![Menu Główne](photos/MainPage.png)  
+![Menu Główne](Photos/MainPage.png)  
 *Main Page*
 
-![Rozgrywka 1](photos/Roulette.png)  
+![Rozgrywka 1](Photos/Roulette.png)  
 *Roulette*
 
-![Rozgrywka 2](photos/BlackJack.png)  
+![Rozgrywka 2](Photos/BlackJack.png)  
 *BlackJack*
 
-![Rozgrywka 3](photos/Slots.png)  
+![Rozgrywka 3](Photos/Slots.png)  
 *Slots*
 
-![Rozgrywka 4](photos/HorseRace1.png)  
-![Rozgrywka 4](photos/HorseRace2.png)  
+![Rozgrywka 4](Photos/HorseRace1.png)  
+![Rozgrywka 4](Photos/HorseRace2.png)  
 *BlackJack*
