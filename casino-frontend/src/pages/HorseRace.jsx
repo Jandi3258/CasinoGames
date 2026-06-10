@@ -269,7 +269,7 @@ const RacePlaceholder = () => {
 const PhotoFinishPlaceholder = ({ winner }) => {
 	return (
 		<div className="rounded-[2rem] border border-zinc-800 bg-[#08121f] p-8 text-center shadow-2xl">
-			<p className="text-base uppercase tracking-[0.35em] text-zinc-500">Fotofinisz</p>
+			<p className="text-base uppercase tracking-[0.35em] text-zinc-500">Finał</p>
 			<p className="mt-4 text-4xl font-semibold text-white">{winner ? winner.name : 'Zacięta końcówka!'}</p>
 			<div className="mx-auto mt-8 h-56 w-full max-w-3xl rounded-3xl bg-zinc-950 p-6">
 				<p className="text-zinc-400 text-lg">Zrzut z kamery zwycięzcy i najbliższych rywali.</p>
@@ -703,7 +703,7 @@ const HorseRacing = ({ user, syncPoints }) => {
 								/>
 								{phase === 'photo-finish' && (
 										<div className="photo-finish-banner absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-center">
-											<span className="photo-finish-text text-3xl md:text-4xl font-extrabold text-white">FOTOFINISZ</span>
+											<span className="photo-finish-text text-3xl md:text-4xl font-extrabold text-white">Koniec</span>
 										</div>
 								)}
 							</div>
