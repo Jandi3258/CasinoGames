@@ -9,7 +9,7 @@ const SYMBOL_CONFIG = [
 const weightedSymbols = SYMBOL_CONFIG.flatMap(s => Array(s.weight).fill(s));
 const getRandomSymbol = () => weightedSymbols[Math.floor(Math.random() * weightedSymbols.length)];
 
-function evaluateSlots(betAmount, params) {
+function evaluateSlots(betAmount, params = {}) {
     const s1 = getRandomSymbol();
     const s2 = getRandomSymbol();
     const s3 = getRandomSymbol();
@@ -22,9 +22,9 @@ function evaluateSlots(betAmount, params) {
         won = true;
     } else if (
         (s1.img === s2.img || s2.img === s3.img || s1.img === s3.img)
-        && Math.random() < 0.1 // Only 10% chance to win on a pair
+        && Math.random() < (typeof params.pairWinProbability === 'number' ? params.pairWinProbability : 0.1)
     ) {
-        payout = Math.floor(betAmount * 2.5);
+        payout = Math.floor(betAmount * (typeof params.pairPayoutMultiplier === 'number' ? params.pairPayoutMultiplier : 2.5));
         won = true;
     }
 
